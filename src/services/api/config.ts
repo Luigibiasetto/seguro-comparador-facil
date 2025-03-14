@@ -3,7 +3,7 @@ import { ApiConfig } from './types';
 
 // Default API configuration
 let apiConfig: ApiConfig = {
-  baseUrl: "https://api-br.universal-assistance.com",
+  baseUrl: "https://api.universal-assistance.com", // Changed from api-br to api
   apiKey: "",
   provider: "universal-assist",
   providerSettings: {

@@ -21,8 +21,8 @@ export const fetchUniversalAssistanceOffers = async (params: SearchParams): Prom
     // First authenticate to get the token
     console.log("Tentando autenticação com a Universal Assistance...");
     
-    // Correct authentication endpoint - modified to use v1/users/login
-    const authUrl = `${baseUrl}/v1/users/login`;
+    // Updated authentication endpoint
+    const authUrl = `${baseUrl}/auth/login`;
     console.log("URL de autenticação:", authUrl);
     
     try {
@@ -90,8 +90,8 @@ export const fetchUniversalAssistanceOffers = async (params: SearchParams): Prom
         }
       };
 
-      // Correct search endpoint - modified to use v1/plans
-      const searchUrl = `${baseUrl}/v1/plans`;
+      // Updated search endpoint
+      const searchUrl = `${baseUrl}/api/plans`;
       console.log("Enviando requisição para busca de planos:", searchData);
       console.log("URL da requisição:", searchUrl);
 
@@ -194,7 +194,6 @@ const generateMockOffers = (count: number): InsuranceOffer[] => {
         delay: Math.floor(price * 0.8)
       },
       benefits: benefits[i % benefits.length],
-      // Fix: Ensure rating is a number (not a string)
       rating: 4 + Math.random(),
       recommended: i === 0, // Make the first one recommended
     });

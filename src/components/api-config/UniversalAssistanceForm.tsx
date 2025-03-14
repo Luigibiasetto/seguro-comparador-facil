@@ -25,13 +25,13 @@ const UniversalAssistanceForm = ({
         <Label htmlFor="baseUrl">URL Base da API</Label>
         <Input
           id="baseUrl"
-          placeholder="https://api-br.universal-assistance.com"
+          placeholder="https://api.universal-assistance.com"
           value={baseUrl}
           onChange={(e) => setBaseUrl(e.target.value)}
           required
         />
         <p className="text-xs text-muted-foreground mt-1">
-          URL base para a API da Universal Assistance (ex: https://api-br.universal-assistance.com)
+          URL base para a API da Universal Assistance (ex: https://api.universal-assistance.com)
         </p>
       </div>
 
