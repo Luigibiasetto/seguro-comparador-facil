@@ -25,7 +25,7 @@ const ProviderSelect = ({ value, onValueChange }: ProviderSelectProps) => {
           <SelectValue placeholder="Selecione o provedor" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="">API Personalizada</SelectItem>
+          <SelectItem value="custom">API Personalizada</SelectItem>
           <SelectItem value="universal-assist">Universal Assistance</SelectItem>
           {/* Adicione outros provedores conforme necessário */}
         </SelectContent>

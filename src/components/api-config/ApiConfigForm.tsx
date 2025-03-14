@@ -17,7 +17,7 @@ interface ApiConfigFormProps {
 
 const ApiConfigForm = ({ onOpenChange }: ApiConfigFormProps) => {
   const [useMock, setUseMock] = useState(true);
-  const [provider, setProvider] = useState("");
+  const [provider, setProvider] = useState("custom");
   const [baseUrl, setBaseUrl] = useState("");
   const [apiKey, setApiKey] = useState("");
   
@@ -29,8 +29,8 @@ const ApiConfigForm = ({ onOpenChange }: ApiConfigFormProps) => {
     e.preventDefault();
     
     try {
-      // Validar URL base se não estiver usando mock e não for Universal Assistance
-      if (!useMock && !provider && !baseUrl) {
+      // Validar URL base se não estiver usando mock e for API personalizada
+      if (!useMock && provider === "custom" && !baseUrl) {
         toast.error("Por favor, insira uma URL base válida.");
         return;
       }
@@ -42,7 +42,7 @@ const ApiConfigForm = ({ onOpenChange }: ApiConfigFormProps) => {
       }
       
       // Se não estiver usando mock e tiver URL, validar a URL
-      if (!useMock && baseUrl) {
+      if (!useMock && provider === "custom" && baseUrl) {
         try {
           new URL(baseUrl);
         } catch (error) {
@@ -55,7 +55,7 @@ const ApiConfigForm = ({ onOpenChange }: ApiConfigFormProps) => {
       const config: any = { useMock };
       
       if (!useMock) {
-        config.provider = provider;
+        config.provider = provider === "custom" ? "" : provider;
         
         // Se tiver selecionado Universal Assistance
         if (provider === "universal-assist") {
@@ -118,7 +118,7 @@ const ApiConfigForm = ({ onOpenChange }: ApiConfigFormProps) => {
               setBaseUrl={setBaseUrl}
               apiKey={apiKey}
               setApiKey={setApiKey}
-              disabled={provider !== ""}
+              disabled={provider !== "custom"}
             />
           )}
         </>
