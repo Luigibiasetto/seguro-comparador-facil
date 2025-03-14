@@ -1,74 +1,13 @@
+
 import { toast } from "sonner";
+import { InsuranceOffer, InsuranceProvider, SearchParams } from "./api/types";
+import { configureInsuranceAPI, getApiConfig } from "./api/config";
+import { parseSearchParams } from "./api/utils";
+import { fetchUniversalAssistanceOffers } from "./api/providers/universalAssistance";
+import { fetchGenericInsuranceOffers, fetchGenericProviders } from "./api/providers/genericApi";
 
-// Tipos para as APIs
-export interface InsuranceProvider {
-  id: string;
-  name: string;
-  logo: string;
-}
-
-export interface InsuranceOffer {
-  id: string;
-  providerId: string;
-  name: string;
-  price: number;
-  coverage: {
-    medical: number;
-    baggage: number;
-    cancellation: number;
-    delay: number;
-    other?: Record<string, number>;
-  };
-  benefits: string[];
-  rating: number;
-  recommended: boolean;
-}
-
-export interface SearchParams {
-  origin: string;
-  destination: string;
-  departureDate: string;
-  returnDate: string;
-  passengers: {
-    count: number;
-    ages: number[];
-  };
-  phone?: string;
-}
-
-// Configurações da API
-interface ApiConfig {
-  baseUrl: string;
-  apiKey?: string;
-  useMock: boolean;
-  provider?: string; // Qual provedor específico usar (ex: "universal-assist")
-  providerSettings?: {
-    clientId?: string;
-    clientSecret?: string;
-    username?: string;
-    password?: string;
-    apiCode?: string;
-    endpoint?: string;
-  };
-}
-
-let apiConfig: ApiConfig = {
-  baseUrl: "",
-  apiKey: "",
-  useMock: false, // Por padrão, não usa dados simulados
-  provider: "universal-assist", // Por padrão, usa Universal Assistance
-  providerSettings: {}
-};
-
-// Função para configurar a API
-export const configureInsuranceAPI = (config: Partial<ApiConfig>) => {
-  apiConfig = { ...apiConfig, ...config };
-  console.log("API configurada:", apiConfig);
-  return apiConfig;
-};
-
-// Lista de provedores simulados (será substituída pela API real)
-const mockProviders: InsuranceProvider[] = [
+// List of providers - will be fetched from the API
+const defaultProviders: InsuranceProvider[] = [
   { id: "assist-card", name: "Assist Card", logo: "/placeholder.svg" },
   { id: "coris", name: "Coris Seguros", logo: "/placeholder.svg" },
   { id: "gc-assist", name: "GC Assist", logo: "/placeholder.svg" },
@@ -76,343 +15,28 @@ const mockProviders: InsuranceProvider[] = [
   { id: "universal-assist", name: "Universal Assist", logo: "/placeholder.svg" },
 ];
 
-// Função para gerar ofertas simuladas (será substituída pela API real)
-const generateMockOffers = (params: SearchParams): InsuranceOffer[] => {
-  const { destination, passengers } = params;
-  const tripDuration = calculateTripDuration(params.departureDate, params.returnDate);
-  
-  // Preço base por dia por pessoa com base no continente
-  let basePricePerDay = 8; // Valor padrão
-  
-  // Ajusta preço base conforme o continente
-  switch(destination) {
-    case "NAMERICA":
-      basePricePerDay = 12;
-      break;
-    case "EUROPE":
-      basePricePerDay = 10;
-      break;
-    case "ASIA":
-      basePricePerDay = 10;
-      break;
-    case "SAMERICA":
-      basePricePerDay = 6;
-      break;
-    case "AFRICA":
-      basePricePerDay = 9;
-      break;
-    case "OCEANIA":
-      basePricePerDay = 11;
-      break;
-    default:
-      basePricePerDay = 8;
-  }
-  
-  return mockProviders.flatMap(provider => {
-    // Cada provedor terá algumas ofertas
-    const offerCount = Math.floor(Math.random() * 3) + 1;
-    
-    return Array.from({ length: offerCount }, (_, index) => {
-      // Calcular multiplicador baseado na pessoa
-      const priceModifier = 1 + (index * 0.5);
-      
-      // Calcular o preço total para todos os passageiros
-      const totalPrice = passengers.ages.reduce((sum, age) => {
-        const ageMultiplier = age < 18 ? 0.7 : (age > 65 ? 1.5 : 1);
-        return sum + (basePricePerDay * tripDuration * priceModifier * ageMultiplier);
-      }, 0);
-      
-      // Gerar uma oferta
-      return {
-        id: `${provider.id}-${index}`,
-        providerId: provider.id,
-        name: ["Básico", "Padrão", "Premium"][index] || "Personalizado",
-        price: Math.round(totalPrice * 100) / 100,
-        coverage: {
-          medical: [30000, 60000, 100000][index] || 30000,
-          baggage: [1000, 1500, 2000][index] || 1000,
-          cancellation: [500, 1000, 2000][index] || 500,
-          delay: [100, 200, 300][index] || 100,
-        },
-        benefits: [
-          "Atendimento 24h em português",
-          "Cobertura COVID-19",
-          "Telemedicina",
-          "Reembolso rápido",
-          "Seguro de bagagem",
-          "Esportes amadores"
-        ].slice(0, 3 + index),
-        rating: 3 + (Math.random() * 2),
-        recommended: index === 1, // O plano padrão é o recomendado
-      };
-    });
-  });
-};
-
-// Calcular a duração da viagem em dias
-const calculateTripDuration = (departureDate: string, returnDate: string): number => {
-  const start = new Date(departureDate);
-  const end = new Date(returnDate);
-  const diffTime = Math.abs(end.getTime() - start.getTime());
-  return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-};
-
-// Integração específica com a API da Universal Assistance
-const fetchUniversalAssistanceOffers = async (params: SearchParams): Promise<InsuranceOffer[]> => {
-  try {
-    console.log("Iniciando busca de dados da Universal Assistance");
-    console.log("Configuração da API:", apiConfig);
-    
-    if (!apiConfig.providerSettings?.username || !apiConfig.providerSettings?.password) {
-      throw new Error("Credenciais da Universal Assistance não configuradas corretamente");
-    }
-
-    // Primeiro autenticar para obter o token
-    console.log("Tentando autenticação com a Universal Assistance...");
-    const authResponse = await fetch(`${apiConfig.baseUrl}/auth/token`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        username: apiConfig.providerSettings.username,
-        password: apiConfig.providerSettings.password
-      })
-    });
-
-    console.log("Status da resposta de autenticação:", authResponse.status);
-    
-    if (!authResponse.ok) {
-      const errorText = await authResponse.text();
-      console.error("Erro na resposta de autenticação:", errorText);
-      throw new Error(`Erro na autenticação com a Universal Assistance: ${authResponse.status}`);
-    }
-
-    const authData = await authResponse.json();
-    console.log("Resposta de autenticação:", authData);
-    
-    const token = authData.token || authData.access_token;
-
-    if (!token) {
-      console.error("Token não encontrado na resposta:", authData);
-      throw new Error("Token de autenticação não recebido");
-    }
-
-    console.log("Token obtido com sucesso");
-
-    // Calcular a duração da viagem em dias
-    const tripDuration = calculateTripDuration(params.departureDate, params.returnDate);
-
-    // Formatar datas no padrão aceito pela API (YYYY-MM-DD)
-    const departureFormatted = new Date(params.departureDate).toISOString().split('T')[0];
-    const returnFormatted = new Date(params.returnDate).toISOString().split('T')[0];
-
-    // Usar códigos de origem e destino enviados pelo buscador
-    const originCode = params.origin; // BR ou INT-BR
-    const destinationCode = params.destination; // NAMERICA, SAMERICA, EUROPE, etc.
-
-    console.log("Parâmetros formatados:", {
-      origin: originCode,
-      destination: destinationCode,
-      departure: departureFormatted,
-      return: returnFormatted,
-      duration: tripDuration,
-      passengers: params.passengers.ages
-    });
-
-    // Preparar os dados para a busca de seguros
-    const searchData = {
-      origin: originCode,
-      destination: destinationCode,
-      departure_date: departureFormatted,
-      return_date: returnFormatted,
-      trip_duration: tripDuration,
-      passengers: params.passengers.ages.map(age => ({ age })),
-      contact: {
-        phone: params.phone || ""
-      }
-    };
-
-    console.log("Enviando requisição para busca de planos:", searchData);
-    console.log("URL da requisição:", `${apiConfig.baseUrl}/plans/search`);
-
-    // Fazer a requisição para buscar planos
-    const response = await fetch(`${apiConfig.baseUrl}/plans/search`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify(searchData)
-    });
-
-    console.log("Status da resposta de busca:", response.status);
-    
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("Erro na resposta de busca:", errorText);
-      throw new Error(`Erro na busca de planos: ${response.status}`);
-    }
-
-    const data = await response.json();
-    console.log("Resposta de busca de planos:", data);
-
-    // Verificar se a resposta contém planos
-    if (!data.plans || !Array.isArray(data.plans) || data.plans.length === 0) {
-      console.warn("Nenhum plano retornado na resposta");
-      return [];
-    }
-
-    // Mapear a resposta da Universal Assistance para o formato interno
-    return data.plans.map((plan: any) => ({
-      id: plan.id || `universal-${Math.random().toString(36).substring(2, 9)}`,
-      providerId: "universal-assist",
-      name: plan.name || "Plano Universal Assistance",
-      price: plan.price || 0,
-      coverage: {
-        medical: plan.coverages?.medical || 0,
-        baggage: plan.coverages?.baggage || 0,
-        cancellation: plan.coverages?.cancellation || 0,
-        delay: plan.coverages?.delay || 0,
-        other: plan.coverages?.other || undefined,
-      },
-      benefits: Array.isArray(plan.benefits) ? plan.benefits.map((b: any) => (typeof b === 'string' ? b : (b.name || ''))) : [],
-      rating: plan.rating || 4.5,
-      recommended: plan.recommended || false,
-    }));
-  } catch (error) {
-    console.error("Erro ao buscar dados da Universal Assistance:", error);
-    toast.error("Erro ao buscar dados da Universal Assistance. Verifique suas credenciais e tente novamente.");
-    // Retornando array vazio em caso de erro para evitar quebra da aplicação
-    return [];
-  }
-};
-
-// Integração com a API real da seguradora
-const fetchRealInsurances = async (params: SearchParams): Promise<InsuranceOffer[]> => {
-  try {
-    // Se estiver configurado especificamente para Universal Assistance
-    if (apiConfig.provider === "universal-assist") {
-      return await fetchUniversalAssistanceOffers(params);
-    }
-    
-    // Implementação genérica para outras APIs
-    const headers: HeadersInit = {
-      'Content-Type': 'application/json',
-    };
-    
-    // Adiciona chave de API se fornecida
-    if (apiConfig.apiKey) {
-      headers['Authorization'] = `Bearer ${apiConfig.apiKey}`;
-    }
-    
-    // Preparar os dados para a API da seguradora
-    const requestData = {
-      origin: params.origin,
-      destination: params.destination,
-      departureDate: params.departureDate,
-      returnDate: params.returnDate,
-      passengers: params.passengers,
-      phone: params.phone || ""
-    };
-    
-    // Fazer a solicitação à API
-    const response = await fetch(`${apiConfig.baseUrl}/search`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(requestData)
-    });
-    
-    if (!response.ok) {
-      throw new Error(`Erro na API: ${response.status} ${response.statusText}`);
-    }
-    
-    const data = await response.json();
-    
-    // Mapear a resposta da API para o formato interno
-    // Nota: Ajuste este mapeamento conforme a estrutura real da API
-    return data.offers.map((apiOffer: any) => ({
-      id: apiOffer.id || `offer-${Math.random().toString(36).substring(2, 9)}`,
-      providerId: apiOffer.providerId || "unknown",
-      name: apiOffer.name || "Plano de Seguro",
-      price: apiOffer.price || 0,
-      coverage: {
-        medical: apiOffer.coverage?.medical || 0,
-        baggage: apiOffer.coverage?.baggage || 0,
-        cancellation: apiOffer.coverage?.cancellation || 0,
-        delay: apiOffer.coverage?.delay || 0,
-        other: apiOffer.coverage?.other || undefined,
-      },
-      benefits: apiOffer.benefits || [],
-      rating: apiOffer.rating || 3.5,
-      recommended: apiOffer.recommended || false,
-    }));
-  } catch (error) {
-    console.error("Erro ao buscar dados da API de seguros:", error);
-    throw error;
-  }
-};
-
-// Função para buscar provedores reais
-const fetchRealProviders = async (): Promise<InsuranceProvider[]> => {
-  try {
-    const headers: HeadersInit = {
-      'Content-Type': 'application/json',
-    };
-    
-    if (apiConfig.apiKey) {
-      headers['Authorization'] = `Bearer ${apiConfig.apiKey}`;
-    }
-    
-    const response = await fetch(`${apiConfig.baseUrl}/providers`, {
-      method: 'GET',
-      headers,
-    });
-    
-    if (!response.ok) {
-      throw new Error(`Erro na API: ${response.status} ${response.statusText}`);
-    }
-    
-    const data = await response.json();
-    
-    // Mapear a resposta da API para o formato interno
-    return data.providers.map((apiProvider: any) => ({
-      id: apiProvider.id || `provider-${Math.random().toString(36).substring(2, 9)}`,
-      name: apiProvider.name || "Seguradora",
-      logo: apiProvider.logo || "/placeholder.svg",
-    }));
-  } catch (error) {
-    console.error("Erro ao buscar provedores de seguros:", error);
-    throw error;
-  }
-};
-
-// Função que será chamada por componentes React - decide entre mock ou API real
+// Function to search for insurances
 export const searchInsurances = async (params: SearchParams): Promise<InsuranceOffer[]> => {
   try {
     console.log("Iniciando busca de seguros com parâmetros:", params);
+    const apiConfig = getApiConfig();
     console.log("Configuração atual da API:", apiConfig);
     
-    // Se a API não estiver configurada, alertar o usuário
+    // If the API is not configured, alert the user
     if (!apiConfig.baseUrl && !apiConfig.provider) {
       toast.error("API de seguros não configurada. Configure a API antes de realizar buscas.");
       return [];
     }
     
-    // Verificar se deve usar dados simulados como fallback
-    if (apiConfig.useMock) {
-      console.log("Usando dados simulados para busca de seguros");
-      // Simular tempo de resposta da API
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // Gerar ofertas simuladas
-      const offers = generateMockOffers(params);
-      
-      // Ordenar por preço (padrão)
-      return offers.sort((a, b) => a.price - b.price);
+    // Based on the provider, use the appropriate integration
+    if (apiConfig.provider === "universal-assist") {
+      console.log("Usando API da Universal Assistance para busca de seguros");
+      const offers = await fetchUniversalAssistanceOffers(params);
+      console.log(`${offers.length} ofertas encontradas`);
+      return offers;
     } else {
-      console.log("Usando API real para busca de seguros");
-      const offers = await fetchRealInsurances(params);
+      console.log("Usando API genérica para busca de seguros");
+      const offers = await fetchGenericInsuranceOffers(params);
       console.log(`${offers.length} ofertas encontradas`);
       return offers;
     }
@@ -423,45 +47,24 @@ export const searchInsurances = async (params: SearchParams): Promise<InsuranceO
   }
 };
 
-// Função para obter os provedores (API real ou mock)
+// Function to get the providers (real API)
 export const getInsuranceProviders = async (): Promise<InsuranceProvider[]> => {
   try {
-    if (!apiConfig.useMock && apiConfig.baseUrl) {
-      return await fetchRealProviders();
+    const apiConfig = getApiConfig();
+    
+    if (apiConfig.baseUrl) {
+      return await fetchGenericProviders();
     } else {
-      // Simular tempo de resposta da API
-      await new Promise(resolve => setTimeout(resolve, 800));
-      return mockProviders;
+      // If no API is configured, return default providers
+      return defaultProviders;
     }
   } catch (error) {
     console.error("Erro ao obter provedores:", error);
     toast.error("Erro ao carregar as seguradoras. Por favor, tente novamente.");
-    return mockProviders;
+    return defaultProviders;
   }
 };
 
-// Função para preparar os parâmetros da URL para a busca
-export const parseSearchParams = (searchParams: URLSearchParams): SearchParams => {
-  const origin = searchParams.get("origin") || "brasil";
-  const destination = searchParams.get("destination") || "";
-  const departureDate = searchParams.get("departureDate") || new Date().toISOString();
-  const returnDate = searchParams.get("returnDate") || new Date().toISOString();
-  const passengersStr = searchParams.get("passengers") || '{"count":1,"ages":[30]}';
-  const phone = searchParams.get("phone") || undefined;
-  
-  let passengers;
-  try {
-    passengers = JSON.parse(passengersStr);
-  } catch (e) {
-    passengers = { count: 1, ages: [30] };
-  }
-  
-  return {
-    origin,
-    destination,
-    departureDate,
-    returnDate,
-    passengers,
-    phone
-  };
-};
+// Re-export the types and utility functions
+export type { InsuranceProvider, InsuranceOffer, SearchParams };
+export { configureInsuranceAPI, parseSearchParams };
