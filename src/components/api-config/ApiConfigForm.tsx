@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { DialogClose, DialogFooter } from "@/components/ui/dialog";
@@ -17,7 +16,7 @@ const ApiConfigForm = ({ onOpenChange }: ApiConfigFormProps) => {
   const [apiProvider, setApiProvider] = useState<string>("universal-assist");
   const [username, setUsername] = useState("raphaelbellei");
   const [password, setPassword] = useState("Anthony25");
-  const [baseUrl, setBaseUrl] = useState("https://api-br.universal-assistance.com");
+  const [baseUrl, setBaseUrl] = useState("https://api-br.universal-assistance.com/v1");
   const [apiKey, setApiKey] = useState("");
   
   const handleSubmit = (e: React.FormEvent) => {
