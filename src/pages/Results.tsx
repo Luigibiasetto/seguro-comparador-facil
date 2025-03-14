@@ -307,7 +307,7 @@ const Results = () => {
               </div>
               <div>
                 <div className="text-sm text-muted-foreground">Passageiros</div>
-                <div className="font-medium">{searchSummary.passengers}</div>
+                <div className="font-medium">{searchSummary.passengers.count}</div>
               </div>
             </div>
           </div>
@@ -558,16 +558,16 @@ const Results = () => {
                                         <TableCell className="text-right">{formatPrice(offer.coverage.medical)}</TableCell>
                                       </TableRow>
                                       <TableRow>
-                                        <TableCell>Odontológica</TableCell>
-                                        <TableCell className="text-right">{formatPrice(offer.coverage.dental)}</TableCell>
-                                      </TableRow>
-                                      <TableRow>
-                                        <TableCell>Farmacêutica</TableCell>
-                                        <TableCell className="text-right">{formatPrice(offer.coverage.pharmaceutical)}</TableCell>
-                                      </TableRow>
-                                      <TableRow>
                                         <TableCell>Bagagem</TableCell>
                                         <TableCell className="text-right">{formatPrice(offer.coverage.baggage)}</TableCell>
+                                      </TableRow>
+                                      <TableRow>
+                                        <TableCell>Cancelamento</TableCell>
+                                        <TableCell className="text-right">{formatPrice(offer.coverage.cancellation)}</TableCell>
+                                      </TableRow>
+                                      <TableRow>
+                                        <TableCell>Atraso</TableCell>
+                                        <TableCell className="text-right">{formatPrice(offer.coverage.delay)}</TableCell>
                                       </TableRow>
                                     </TableBody>
                                   </Table>
