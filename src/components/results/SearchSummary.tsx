@@ -1,7 +1,6 @@
 
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { formatCountry } from "@/lib/countries";
 
 interface SearchSummaryProps {
   origin: string;
@@ -25,7 +24,7 @@ const SearchSummary = ({
       case "INT-BR":
         return "Estrangeiro vindo ao Brasil";
       default:
-        return formatCountry(origin);
+        return origin;
     }
   };
 
@@ -53,8 +52,8 @@ const SearchSummary = ({
       return continentMap[destination];
     }
     
-    // Caso não seja um continente, usa o formatador de país
-    return formatCountry(destination);
+    // Caso não seja um continente conhecido, retorna o próprio código
+    return destination;
   };
 
   return (

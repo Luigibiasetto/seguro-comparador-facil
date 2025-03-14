@@ -20,7 +20,7 @@ import { Label } from "@/components/ui/label";
 
 // Tipos para origem e destino com base na API da Universal Assistance
 type OriginType = "BR" | "INT-BR";
-type DestinationType = "NAMERICA" | "SAMERICA" | "EUROPE" | "ASIA" | "AFRICA" | "OCEANIA" | string;
+type DestinationType = "NAMERICA" | "SAMERICA" | "EUROPE" | "ASIA" | "AFRICA" | "OCEANIA";
 
 interface SearchFormProps {
   className?: string;
@@ -33,7 +33,7 @@ const SearchForm = ({ className = "", defaultExpanded = true }: SearchFormProps)
   
   // Estados do formulário
   const [origin, setOrigin] = useState<OriginType>("BR");
-  const [destination, setDestination] = useState<DestinationType>("");
+  const [destination, setDestination] = useState<DestinationType | "">("");
   const [departureDate, setDepartureDate] = useState<Date | undefined>(
     new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // Data atual + 7 dias
   );
@@ -52,12 +52,12 @@ const SearchForm = ({ className = "", defaultExpanded = true }: SearchFormProps)
 
   // Continentes para seleção de destino conforme especificações da Universal Assistance
   const continents = [
-    { id: "NAMERICA", name: "América do Norte", code: "NAMERICA" },
-    { id: "SAMERICA", name: "América do Sul", code: "SAMERICA" },
-    { id: "EUROPE", name: "Europa", code: "EUROPE" },
-    { id: "ASIA", name: "Ásia", code: "ASIA" },
-    { id: "AFRICA", name: "África", code: "AFRICA" },
-    { id: "OCEANIA", name: "Oceania", code: "OCEANIA" },
+    { id: "NAMERICA", name: "América do Norte" },
+    { id: "SAMERICA", name: "América do Sul" },
+    { id: "EUROPE", name: "Europa" },
+    { id: "ASIA", name: "Ásia" },
+    { id: "AFRICA", name: "África" },
+    { id: "OCEANIA", name: "Oceania" },
   ];
 
   // Validações básicas
@@ -160,18 +160,6 @@ const SearchForm = ({ className = "", defaultExpanded = true }: SearchFormProps)
     }
   };
 
-  // Obter rótulo para origem
-  const getOriginLabel = (originValue: OriginType) => {
-    switch (originValue) {
-      case "BR":
-        return "Brasil";
-      case "INT-BR":
-        return "Estrangeiro vindo ao Brasil";
-      default:
-        return originValue;
-    }
-  };
-
   return (
     <div className={className}>
       <form onSubmit={handleSubmit} className="glass rounded-xl p-4 md:p-6 shadow-lg">
@@ -205,7 +193,7 @@ const SearchForm = ({ className = "", defaultExpanded = true }: SearchFormProps)
             <div className="input-glass w-full rounded-lg">
               <select
                 value={destination}
-                onChange={(e) => setDestination(e.target.value)}
+                onChange={(e) => setDestination(e.target.value as DestinationType)}
                 className="w-full px-3 py-2.5 rounded-lg bg-transparent border-0 focus:ring-0 focus:outline-none"
               >
                 <option value="">Selecione {origin === "INT-BR" ? "o continente de origem" : "o continente de destino"}</option>
