@@ -5,14 +5,17 @@ import { Shield, Compass, Clock, Check } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import SearchForm from "@/components/SearchForm";
+import { useStaggeredAnimation } from "@/lib/animations";
 
 const Index = () => {
   const [isLoaded, setIsLoaded] = useState(false);
 
+  // Initialize animations
   useEffect(() => {
     setIsLoaded(true);
   }, []);
 
+  // Animation variants
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -33,6 +36,7 @@ const Index = () => {
     },
   };
 
+  // Content data
   const features = [
     {
       icon: <Shield className="h-6 w-6 text-brand-600" />,
