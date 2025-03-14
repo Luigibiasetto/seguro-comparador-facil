@@ -55,8 +55,8 @@ interface ApiConfig {
 let apiConfig: ApiConfig = {
   baseUrl: "",
   apiKey: "",
-  useMock: true, // Por padrão, usa dados simulados
-  provider: "",
+  useMock: false, // Por padrão, não usa dados simulados
+  provider: "universal-assist", // Por padrão, usa Universal Assistance
   providerSettings: {}
 };
 
@@ -290,8 +290,6 @@ const fetchUniversalAssistanceOffers = async (params: SearchParams): Promise<Ins
   }
 };
 
-// Não precisamos mais mapear países para a Universal Assistance, pois agora usamos códigos de continente diretamente
-
 // Integração com a API real da seguradora
 const fetchRealInsurances = async (params: SearchParams): Promise<InsuranceOffer[]> => {
   try {
@@ -397,13 +395,14 @@ export const searchInsurances = async (params: SearchParams): Promise<InsuranceO
     console.log("Iniciando busca de seguros com parâmetros:", params);
     console.log("Configuração atual da API:", apiConfig);
     
-    // Usando API real ou dados simulados
-    if (!apiConfig.useMock && (apiConfig.baseUrl || apiConfig.provider)) {
-      console.log("Usando API real para busca de seguros");
-      const offers = await fetchRealInsurances(params);
-      console.log(`${offers.length} ofertas encontradas`);
-      return offers;
-    } else {
+    // Se a API não estiver configurada, alertar o usuário
+    if (!apiConfig.baseUrl && !apiConfig.provider) {
+      toast.error("API de seguros não configurada. Configure a API antes de realizar buscas.");
+      return [];
+    }
+    
+    // Verificar se deve usar dados simulados como fallback
+    if (apiConfig.useMock) {
       console.log("Usando dados simulados para busca de seguros");
       // Simular tempo de resposta da API
       await new Promise(resolve => setTimeout(resolve, 1500));
@@ -413,10 +412,15 @@ export const searchInsurances = async (params: SearchParams): Promise<InsuranceO
       
       // Ordenar por preço (padrão)
       return offers.sort((a, b) => a.price - b.price);
+    } else {
+      console.log("Usando API real para busca de seguros");
+      const offers = await fetchRealInsurances(params);
+      console.log(`${offers.length} ofertas encontradas`);
+      return offers;
     }
   } catch (error) {
     console.error("Erro ao buscar seguros:", error);
-    toast.error("Erro ao buscar seguros. Por favor, tente novamente.");
+    toast.error("Erro ao buscar seguros. Por favor, verifique a configuração da API e tente novamente.");
     return [];
   }
 };
