@@ -31,10 +31,30 @@ const SearchSummary = ({
 
   const getDestinationLabel = () => {
     if (origin === "estrangeiro-brasil") {
-      return "País de Origem";
+      return "Continente de Origem";
     } else {
       return "Destino";
     }
+  };
+
+  const formatDestination = () => {
+    // Mapeamento dos continentes
+    const continentMap: Record<string, string> = {
+      'america-norte': 'América do Norte',
+      'america-sul': 'América do Sul',
+      'europa': 'Europa',
+      'asia': 'Ásia',
+      'africa': 'África',
+      'oceania': 'Oceania'
+    };
+
+    // Verifica se o destino é um continente
+    if (continentMap[destination]) {
+      return continentMap[destination];
+    }
+    
+    // Caso não seja um continente, usa o formatador de país
+    return formatCountry(destination);
   };
 
   return (
@@ -47,7 +67,7 @@ const SearchSummary = ({
         </div>
         <div>
           <div className="text-sm text-muted-foreground">{getDestinationLabel()}</div>
-          <div className="font-medium">{formatCountry(destination)}</div>
+          <div className="font-medium">{formatDestination()}</div>
         </div>
         <div>
           <div className="text-sm text-muted-foreground">Data de ida</div>

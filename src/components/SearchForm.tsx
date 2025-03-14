@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Plane, Calendar, ArrowRight, Users } from "lucide-react";
@@ -19,6 +20,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 
 type OriginType = "brasil" | "estrangeiro-brasil";
+type DestinationType = "america-norte" | "america-sul" | "europa" | "asia" | "africa" | "oceania" | string;
 
 interface SearchFormProps {
   className?: string;
@@ -31,7 +33,7 @@ const SearchForm = ({ className = "", defaultExpanded = true }: SearchFormProps)
   
   // Estados do formulário
   const [origin, setOrigin] = useState<OriginType>("brasil");
-  const [destination, setDestination] = useState("");
+  const [destination, setDestination] = useState<DestinationType>("");
   const [departureDate, setDepartureDate] = useState<Date | undefined>(
     new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // Data atual + 7 dias
   );
@@ -48,12 +50,22 @@ const SearchForm = ({ className = "", defaultExpanded = true }: SearchFormProps)
   const [isDepartureFocused, setIsDepartureFocused] = useState(false);
   const [isReturnFocused, setIsReturnFocused] = useState(false);
 
+  // Continentes para seleção de destino
+  const continents = [
+    { id: "america-norte", name: "América do Norte" },
+    { id: "america-sul", name: "América do Sul" },
+    { id: "europa", name: "Europa" },
+    { id: "asia", name: "Ásia" },
+    { id: "africa", name: "África" },
+    { id: "oceania", name: "Oceania" },
+  ];
+
   // Validações básicas
   const isValidForm = () => {
     if (!destination) {
       toast({
         title: "Destino necessário",
-        description: "Por favor, selecione o país de destino.",
+        description: "Por favor, selecione o destino.",
         variant: "destructive",
       });
       return false;
@@ -173,14 +185,26 @@ const SearchForm = ({ className = "", defaultExpanded = true }: SearchFormProps)
             </RadioGroup>
           </div>
 
-          {/* Seleção de Destino */}
-          <CountrySelect
-            value={destination}
-            onChange={setDestination}
-            label={getDestinationLabel()}
-            placeholder={origin === "estrangeiro-brasil" ? "De onde você vem?" : "Para onde você vai?"}
-            excludedCountry={origin === "brasil" ? "BR" : (origin === "estrangeiro-brasil" ? undefined : "BR")}
-          />
+          {/* Seleção de Destino/Continente */}
+          <div className="space-y-1.5">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              {getDestinationLabel()}
+            </label>
+            <div className="input-glass w-full rounded-lg">
+              <select
+                value={destination}
+                onChange={(e) => setDestination(e.target.value)}
+                className="w-full px-3 py-2.5 rounded-lg bg-transparent border-0 focus:ring-0 focus:outline-none"
+              >
+                <option value="">Selecione {origin === "estrangeiro-brasil" ? "o continente de origem" : "o continente de destino"}</option>
+                {continents.map((continent) => (
+                  <option key={continent.id} value={continent.id}>
+                    {continent.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
 
           {/* Datas */}
           <div className="lg:col-span-1 grid grid-cols-2 gap-3">
