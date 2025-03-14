@@ -16,6 +16,13 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { configureInsuranceAPI } from "@/services/insuranceApi";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface ApiConfigModalProps {
   open: boolean;
@@ -23,22 +30,33 @@ interface ApiConfigModalProps {
 }
 
 const ApiConfigModal = ({ open, onOpenChange }: ApiConfigModalProps) => {
+  const [useMock, setUseMock] = useState(true);
+  const [provider, setProvider] = useState("");
   const [baseUrl, setBaseUrl] = useState("");
   const [apiKey, setApiKey] = useState("");
-  const [useMock, setUseMock] = useState(true);
+  
+  // Campos específicos da Universal Assistance
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
     try {
-      // Validar URL base se não estiver usando mock
-      if (!useMock) {
-        if (!baseUrl) {
-          toast.error("Por favor, insira uma URL base válida.");
-          return;
-        }
-        
-        // Tentar criar um objeto URL para verificar se é uma URL válida
+      // Validar URL base se não estiver usando mock e não for Universal Assistance
+      if (!useMock && !provider && !baseUrl) {
+        toast.error("Por favor, insira uma URL base válida.");
+        return;
+      }
+      
+      // Verificar credenciais específicas para Universal Assistance
+      if (provider === "universal-assist" && (!username || !password)) {
+        toast.error("Por favor, insira o nome de usuário e senha para a Universal Assistance.");
+        return;
+      }
+      
+      // Se não estiver usando mock e tiver URL, validar a URL
+      if (!useMock && baseUrl) {
         try {
           new URL(baseUrl);
         } catch (error) {
@@ -48,17 +66,34 @@ const ApiConfigModal = ({ open, onOpenChange }: ApiConfigModalProps) => {
       }
       
       // Configurar a API
-      configureInsuranceAPI({
-        baseUrl,
-        apiKey: apiKey || undefined,
-        useMock,
-      });
+      const config: any = { useMock };
       
-      toast.success(
-        useMock 
-          ? "Configurado para usar dados simulados." 
-          : "API configurada com sucesso!"
-      );
+      if (!useMock) {
+        config.provider = provider;
+        
+        // Se tiver selecionado Universal Assistance
+        if (provider === "universal-assist") {
+          config.baseUrl = "https://api.universalassistance.com/v1"; // URL base da Universal Assistance
+          config.providerSettings = {
+            username,
+            password
+          };
+        } else {
+          // Para outras APIs genéricas
+          config.baseUrl = baseUrl;
+          if (apiKey) config.apiKey = apiKey;
+        }
+      }
+      
+      configureInsuranceAPI(config);
+      
+      const successMessage = useMock 
+        ? "Configurado para usar dados simulados." 
+        : provider === "universal-assist"
+          ? "API da Universal Assistance configurada com sucesso!"
+          : "API configurada com sucesso!";
+          
+      toast.success(successMessage);
       
       onOpenChange(false);
     } catch (error) {
@@ -92,26 +127,75 @@ const ApiConfigModal = ({ open, onOpenChange }: ApiConfigModalProps) => {
           {!useMock && (
             <>
               <div className="space-y-2">
-                <Label htmlFor="baseUrl">URL Base da API</Label>
-                <Input
-                  id="baseUrl"
-                  placeholder="https://api.seguradora.com"
-                  value={baseUrl}
-                  onChange={(e) => setBaseUrl(e.target.value)}
-                  disabled={useMock}
-                />
+                <Label htmlFor="provider">Provedor de API</Label>
+                <Select
+                  value={provider}
+                  onValueChange={setProvider}
+                >
+                  <SelectTrigger id="provider">
+                    <SelectValue placeholder="Selecione o provedor" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">API Personalizada</SelectItem>
+                    <SelectItem value="universal-assist">Universal Assistance</SelectItem>
+                    {/* Adicione outros provedores conforme necessário */}
+                  </SelectContent>
+                </Select>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="apiKey">Chave da API (opcional)</Label>
-                <Input
-                  id="apiKey"
-                  placeholder="sua-chave-api"
-                  value={apiKey}
-                  onChange={(e) => setApiKey(e.target.value)}
-                  disabled={useMock}
-                />
-              </div>
+              {provider === "universal-assist" ? (
+                // Campos específicos para Universal Assistance
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="username">Nome de usuário</Label>
+                    <Input
+                      id="username"
+                      placeholder="Usuário da API"
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="password">Senha</Label>
+                    <Input
+                      id="password"
+                      type="password"
+                      placeholder="Senha da API"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                    />
+                  </div>
+                </>
+              ) : (
+                // Campos para API genérica
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="baseUrl">URL Base da API</Label>
+                    <Input
+                      id="baseUrl"
+                      placeholder="https://api.seguradora.com"
+                      value={baseUrl}
+                      onChange={(e) => setBaseUrl(e.target.value)}
+                      required={provider === ""}
+                      disabled={provider !== ""}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="apiKey">Chave da API (opcional)</Label>
+                    <Input
+                      id="apiKey"
+                      placeholder="sua-chave-api"
+                      value={apiKey}
+                      onChange={(e) => setApiKey(e.target.value)}
+                      disabled={provider !== ""}
+                    />
+                  </div>
+                </>
+              )}
             </>
           )}
 

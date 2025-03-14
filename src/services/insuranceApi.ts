@@ -41,12 +41,22 @@ interface ApiConfig {
   baseUrl: string;
   apiKey?: string;
   useMock: boolean;
+  provider?: string; // Qual provedor específico usar (ex: "universal-assist")
+  providerSettings?: {
+    clientId?: string;
+    clientSecret?: string;
+    username?: string;
+    password?: string;
+    endpoint?: string;
+  };
 }
 
 let apiConfig: ApiConfig = {
   baseUrl: "",
   apiKey: "",
-  useMock: true // Por padrão, usa dados simulados
+  useMock: true, // Por padrão, usa dados simulados
+  provider: "",
+  providerSettings: {}
 };
 
 // Função para configurar a API
@@ -123,9 +133,125 @@ const calculateTripDuration = (departureDate: string, returnDate: string): numbe
   return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 };
 
+// Integração específica com a API da Universal Assistance
+const fetchUniversalAssistanceOffers = async (params: SearchParams): Promise<InsuranceOffer[]> => {
+  try {
+    if (!apiConfig.providerSettings?.username || !apiConfig.providerSettings?.password) {
+      throw new Error("Credenciais da Universal Assistance não configuradas");
+    }
+
+    // Primeiro autenticar para obter o token
+    const authResponse = await fetch(`${apiConfig.baseUrl}/auth/token`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        username: apiConfig.providerSettings.username,
+        password: apiConfig.providerSettings.password
+      })
+    });
+
+    if (!authResponse.ok) {
+      throw new Error(`Erro na autenticação com a Universal Assistance: ${authResponse.status}`);
+    }
+
+    const authData = await authResponse.json();
+    const token = authData.token || authData.access_token;
+
+    if (!token) {
+      throw new Error("Token de autenticação não recebido");
+    }
+
+    // Calcular a duração da viagem em dias
+    const tripDuration = calculateTripDuration(params.departureDate, params.returnDate);
+
+    // Formatar datas no padrão aceito pela API (YYYY-MM-DD)
+    const departureFormatted = new Date(params.departureDate).toISOString().split('T')[0];
+    const returnFormatted = new Date(params.returnDate).toISOString().split('T')[0];
+
+    // Mapear países para os códigos aceitos pela Universal Assistance
+    const destinationCode = mapCountryCodeForUniversalAssistance(params.destination);
+
+    // Preparar os dados para a busca de seguros
+    const searchData = {
+      origin: params.origin === "brasil" ? "BR" : params.origin,
+      destination: destinationCode,
+      departure_date: departureFormatted,
+      return_date: returnFormatted,
+      trip_duration: tripDuration,
+      passengers: params.passengers.ages.map(age => ({ age })),
+      contact: {
+        phone: params.phone || ""
+      }
+    };
+
+    // Fazer a requisição para buscar planos
+    const response = await fetch(`${apiConfig.baseUrl}/plans/search`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(searchData)
+    });
+
+    if (!response.ok) {
+      throw new Error(`Erro na busca de planos: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    // Mapear a resposta da Universal Assistance para o formato interno
+    return data.plans.map((plan: any) => ({
+      id: plan.id || `universal-${Math.random().toString(36).substring(2, 9)}`,
+      providerId: "universal-assist",
+      name: plan.name || "Plano Universal Assistance",
+      price: plan.price || 0,
+      coverage: {
+        medical: plan.coverages?.medical || 0,
+        baggage: plan.coverages?.baggage || 0,
+        cancellation: plan.coverages?.cancellation || 0,
+        delay: plan.coverages?.delay || 0,
+        other: plan.coverages?.other || undefined,
+      },
+      benefits: plan.benefits?.map((b: any) => b.name || b) || [],
+      rating: plan.rating || 4.5,
+      recommended: plan.recommended || false,
+    }));
+  } catch (error) {
+    console.error("Erro ao buscar dados da Universal Assistance:", error);
+    toast.error("Erro ao buscar dados da Universal Assistance. Verifique suas credenciais.");
+    throw error;
+  }
+};
+
+// Função para mapear códigos de país para o formato da Universal Assistance
+const mapCountryCodeForUniversalAssistance = (countryCode: string): string => {
+  // Esta função pode ser expandida conforme necessário
+  // para mapear os códigos de país para o formato aceito pela Universal Assistance
+  const mappings: Record<string, string> = {
+    "US": "USA",
+    "GB": "GBR",
+    "FR": "FRA",
+    "DE": "DEU",
+    "IT": "ITA",
+    "ES": "ESP",
+    // Adicione mais mapeamentos conforme necessário
+  };
+  
+  return mappings[countryCode] || countryCode;
+};
+
 // Integração com a API real da seguradora
 const fetchRealInsurances = async (params: SearchParams): Promise<InsuranceOffer[]> => {
   try {
+    // Se estiver configurado especificamente para Universal Assistance
+    if (apiConfig.provider === "universal-assist") {
+      return await fetchUniversalAssistanceOffers(params);
+    }
+    
+    // Implementação genérica para outras APIs
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
     };
@@ -220,7 +346,7 @@ const fetchRealProviders = async (): Promise<InsuranceProvider[]> => {
 export const searchInsurances = async (params: SearchParams): Promise<InsuranceOffer[]> => {
   try {
     // Usando API real ou dados simulados
-    if (!apiConfig.useMock && apiConfig.baseUrl) {
+    if (!apiConfig.useMock && (apiConfig.baseUrl || apiConfig.provider)) {
       return await fetchRealInsurances(params);
     } else {
       // Simular tempo de resposta da API
