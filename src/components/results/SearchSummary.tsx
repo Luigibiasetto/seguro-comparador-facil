@@ -21,9 +21,7 @@ const SearchSummary = ({
   const getOriginLabel = () => {
     switch (origin) {
       case "brasil":
-        return "Brasileiro indo ao exterior";
-      case "estrangeiro":
-        return "Estrangeiro";
+        return "Brasil";
       case "estrangeiro-brasil":
         return "Estrangeiro vindo ao Brasil";
       default:

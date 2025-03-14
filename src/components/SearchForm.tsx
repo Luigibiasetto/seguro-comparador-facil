@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Plane, Calendar, ArrowRight, Users } from "lucide-react";
@@ -19,7 +18,7 @@ import PassengerSelect from "./PassengerSelect";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 
-type OriginType = "brasil" | "estrangeiro" | "estrangeiro-brasil";
+type OriginType = "brasil" | "estrangeiro-brasil";
 
 interface SearchFormProps {
   className?: string;
@@ -165,11 +164,7 @@ const SearchForm = ({ className = "", defaultExpanded = true }: SearchFormProps)
             >
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="brasil" id="option-brasil" />
-                <Label htmlFor="option-brasil">Brasileiro indo ao exterior</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="estrangeiro" id="option-estrangeiro" />
-                <Label htmlFor="option-estrangeiro">Estrangeiro</Label>
+                <Label htmlFor="option-brasil">Brasil</Label>
               </div>
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="estrangeiro-brasil" id="option-estrangeiro-brasil" />
