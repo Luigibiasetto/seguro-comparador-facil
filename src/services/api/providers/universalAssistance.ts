@@ -20,7 +20,12 @@ export const fetchUniversalAssistanceOffers = async (params: SearchParams): Prom
 
     // First authenticate to get the token
     console.log("Tentando autenticação com a Universal Assistance...");
-    const authResponse = await fetch(`${baseUrl}/auth/login`, {
+    
+    // Construct the authentication URL
+    const authUrl = `${baseUrl}/auth/login`;
+    console.log("URL de autenticação:", authUrl);
+    
+    const authResponse = await fetch(authUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -36,6 +41,10 @@ export const fetchUniversalAssistanceOffers = async (params: SearchParams): Prom
     if (!authResponse.ok) {
       const errorText = await authResponse.text();
       console.error("Erro na resposta de autenticação:", errorText);
+      
+      // Mostrar um toast mais detalhado com o código do erro
+      toast.error(`Erro na autenticação: ${authResponse.status} - Verifique as credenciais e a URL base.`);
+      
       throw new Error(`Erro na autenticação com a Universal Assistance: ${authResponse.status}`);
     }
 
@@ -46,6 +55,7 @@ export const fetchUniversalAssistanceOffers = async (params: SearchParams): Prom
 
     if (!token) {
       console.error("Token não encontrado na resposta:", authData);
+      toast.error("Token de autenticação não recebido. Formato de resposta diferente do esperado.");
       throw new Error("Token de autenticação não recebido");
     }
 
@@ -84,11 +94,13 @@ export const fetchUniversalAssistanceOffers = async (params: SearchParams): Prom
       }
     };
 
+    // Construct the search URL
+    const searchUrl = `${baseUrl}/plans/search`;
     console.log("Enviando requisição para busca de planos:", searchData);
-    console.log("URL da requisição:", `${baseUrl}/plans/search`);
+    console.log("URL da requisição:", searchUrl);
 
     // Make the request to search for plans
-    const response = await fetch(`${baseUrl}/plans/search`, {
+    const response = await fetch(searchUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -102,6 +114,10 @@ export const fetchUniversalAssistanceOffers = async (params: SearchParams): Prom
     if (!response.ok) {
       const errorText = await response.text();
       console.error("Erro na resposta de busca:", errorText);
+      
+      // Mostrar um toast mais detalhado
+      toast.error(`Erro na busca de planos: ${response.status} - Verifique os parâmetros de busca.`);
+      
       throw new Error(`Erro na busca de planos: ${response.status}`);
     }
 
@@ -111,6 +127,7 @@ export const fetchUniversalAssistanceOffers = async (params: SearchParams): Prom
     // Check if the response contains plans
     if (!data.plans || !Array.isArray(data.plans) || data.plans.length === 0) {
       console.warn("Nenhum plano retornado na resposta");
+      toast.info("Nenhum plano encontrado para os parâmetros informados.");
       return [];
     }
 
