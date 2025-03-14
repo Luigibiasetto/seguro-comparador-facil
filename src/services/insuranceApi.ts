@@ -15,40 +15,6 @@ const defaultProviders: InsuranceProvider[] = [
   { id: "universal-assist", name: "Universal Assist", logo: "/placeholder.svg" },
 ];
 
-// Mock insurance offers for testing purposes
-const mockOffers: InsuranceOffer[] = [
-  {
-    id: "universal-1",
-    providerId: "universal-assist",
-    name: "Plano Essencial",
-    price: 199.9,
-    coverage: {
-      medical: 40000,
-      baggage: 1000,
-      cancellation: 2000,
-      delay: 200
-    },
-    benefits: ["COVID-19", "Telemedicina", "Traslado médico"],
-    rating: 4.5,
-    recommended: true
-  },
-  {
-    id: "universal-2",
-    providerId: "universal-assist",
-    name: "Plano Premium",
-    price: 299.9,
-    coverage: {
-      medical: 80000,
-      baggage: 1500,
-      cancellation: 3000,
-      delay: 300
-    },
-    benefits: ["COVID-19", "Telemedicina", "Traslado médico", "Esportes aventura"],
-    rating: 4.7,
-    recommended: false
-  }
-];
-
 // Function to search for insurances
 export const searchInsurances = async (params: SearchParams): Promise<InsuranceOffer[]> => {
   try {
@@ -59,7 +25,7 @@ export const searchInsurances = async (params: SearchParams): Promise<InsuranceO
     // If the API is not configured, alert the user
     if (!apiConfig.baseUrl && !apiConfig.provider) {
       toast.error("API de seguros não configurada. Configure a API antes de realizar buscas.");
-      return mockOffers; // Return mock data instead of empty array for better user experience
+      return []; // Return empty array
     }
     
     // Based on the provider, use the appropriate integration
@@ -68,42 +34,28 @@ export const searchInsurances = async (params: SearchParams): Promise<InsuranceO
       try {
         const offers = await fetchUniversalAssistanceOffers(params);
         console.log(`${offers.length} ofertas encontradas`);
-        
-        // If no offers found, return mock data for better user experience
-        if (offers.length === 0) {
-          toast.info("Usando dados de demonstração pois não foram encontradas ofertas reais.");
-          return mockOffers;
-        }
-        
         return offers;
       } catch (error) {
-        console.error("Erro com a API da Universal Assistance, usando dados mockados:", error);
-        toast.warning("Usando dados de demonstração devido a um erro na API.");
-        return mockOffers;
+        console.error("Erro com a API da Universal Assistance:", error);
+        toast.error("Erro ao buscar dados da Universal Assistance. Verifique o console para mais detalhes.");
+        return []; // Return empty array
       }
     } else {
       console.log("Usando API genérica para busca de seguros");
       try {
         const offers = await fetchGenericInsuranceOffers(params);
         console.log(`${offers.length} ofertas encontradas`);
-        
-        // If no offers found, return mock data for better user experience
-        if (offers.length === 0) {
-          toast.info("Usando dados de demonstração pois não foram encontradas ofertas reais.");
-          return mockOffers;
-        }
-        
         return offers;
       } catch (error) {
-        console.error("Erro com a API genérica, usando dados mockados:", error);
-        toast.warning("Usando dados de demonstração devido a um erro na API.");
-        return mockOffers;
+        console.error("Erro com a API genérica:", error);
+        toast.error("Erro ao buscar dados da API. Verifique o console para mais detalhes.");
+        return []; // Return empty array
       }
     }
   } catch (error) {
     console.error("Erro ao buscar seguros:", error);
     toast.error("Erro ao buscar seguros. Por favor, verifique a configuração da API e tente novamente.");
-    return mockOffers; // Return mock data instead of empty array for better user experience
+    return []; // Return empty array
   }
 };
 
