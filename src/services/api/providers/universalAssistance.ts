@@ -16,7 +16,7 @@ export const fetchUniversalAssistanceOffers = async (params: SearchParams): Prom
 
     // First authenticate to get the token
     console.log("Tentando autenticação com a Universal Assistance...");
-    const authResponse = await fetch(`${apiConfig.baseUrl}/auth/token`, {
+    const authResponse = await fetch(`${apiConfig.baseUrl}/auth/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
