@@ -14,17 +14,17 @@ export const fetchUniversalAssistanceOffers = async (params: SearchParams): Prom
       throw new Error("Credenciais da Universal Assistance não configuradas corretamente");
     }
 
-    // Remove trailing slashes from baseUrl if present
-    const baseUrl = apiConfig.baseUrl.replace(/\/+$/, "");
-    console.log("Base URL normalizada:", baseUrl);
+    // Fix: use base URL without adding /v1 again since it's already in the config
+    const baseUrl = apiConfig.baseUrl;
+    console.log("Base URL para requisições:", baseUrl);
 
-    // Tenta vários endpoints diferentes para a API
+    // Try different authentication formats
     const possibleAuthEndpoints = [
-      `${baseUrl}/auth/login`,
-      `${baseUrl}/v1/users/login`,
-      `${baseUrl}/api/auth/login`,
-      `${baseUrl}/login`,
-      `${baseUrl}/v2/auth/login`
+      `${baseUrl}/auth/token`,
+      `${baseUrl}/auth`,
+      `${baseUrl}/users/authenticate`,
+      `${baseUrl}/authenticate`,
+      `${baseUrl}/login`
     ];
     
     let token = null;
@@ -36,61 +36,79 @@ export const fetchUniversalAssistanceOffers = async (params: SearchParams): Prom
       try {
         console.log("Tentando URL de autenticação:", authUrl);
         
-        // Tentativa com diferentes modos de CORS
-        const corsOptions = [
-          { mode: 'cors' as RequestMode },
-          { mode: 'no-cors' as RequestMode },
-          {}  // default fetch options
+        // Try different authentication request formats
+        const authFormats = [
+          // Standard username/password
+          {
+            body: JSON.stringify({
+              username: apiConfig.providerSettings.username,
+              password: apiConfig.providerSettings.password
+            })
+          },
+          // Alternative format with credentials object
+          {
+            body: JSON.stringify({
+              credentials: {
+                username: apiConfig.providerSettings.username,
+                password: apiConfig.providerSettings.password
+              }
+            })
+          },
+          // Another format using user/pass
+          {
+            body: JSON.stringify({
+              user: apiConfig.providerSettings.username,
+              pass: apiConfig.providerSettings.password
+            })
+          }
         ];
         
-        for (const corsOption of corsOptions) {
+        for (const format of authFormats) {
           try {
             authResponse = await fetch(authUrl, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
-                'Accept': 'application/json'
+                'Accept': 'application/json',
+                'Origin': window.location.origin
               },
-              body: JSON.stringify({
-                username: apiConfig.providerSettings.username,
-                password: apiConfig.providerSettings.password
-              }),
-              ...corsOption
+              body: format.body,
+              // Try without explicit CORS mode first
+              credentials: 'include'
             });
             
-            console.log(`Status da resposta de autenticação (${authUrl}):`, authResponse.status);
-            
-            // Se o modo no-cors foi usado, não podemos ler o corpo da resposta
-            if (corsOption.mode === 'no-cors') {
-              console.log("Usando modo no-cors, não é possível verificar a resposta");
-              // Tentando próxima abordagem pois no-cors não permite acesso à resposta
-              continue;
-            }
+            console.log(`Resposta de autenticação (${authUrl}):`, {
+              status: authResponse.status,
+              statusText: authResponse.statusText
+            });
             
             if (!authResponse.ok) {
-              const errorText = await authResponse.text();
-              console.error(`Erro na resposta de autenticação (${authUrl}):`, errorText);
-              continue; // Tenta próxima opção
+              continue; // Try next format
             }
 
-            const authData = await authResponse.json();
-            console.log("Resposta de autenticação bem-sucedida:", authData);
-            
-            token = authData.token || authData.access_token || authData.accessToken;
-            
-            if (token) {
-              console.log("Token obtido com sucesso de:", authUrl);
-              break; // Sai do loop de CORS se token obtido
-            } else {
-              console.error("Token não encontrado na resposta:", authData);
+            try {
+              const authData = await authResponse.json();
+              console.log("Resposta de autenticação bem-sucedida:", authData);
+              
+              // Try different token formats based on API response
+              token = authData.token || authData.access_token || authData.accessToken || 
+                      authData.auth?.token || authData.data?.token || 
+                      (typeof authData === 'string' ? authData : null);
+              
+              if (token) {
+                console.log("Token obtido com sucesso de:", authUrl);
+                break; // Exit format loop if token obtained
+              }
+            } catch (jsonError) {
+              console.warn("Resposta não é JSON válido:", jsonError);
+              // If the response is not valid JSON, try the next format
             }
-          } catch (error) {
-            console.error(`Erro com modo CORS ${corsOption.mode} para ${authUrl}:`, error);
-            // Continua para a próxima opção de CORS
+          } catch (formatError) {
+            console.error(`Erro com formato de autenticação para ${authUrl}:`, formatError);
           }
         }
         
-        if (token) break; // Sai do loop de endpoints se token obtido
+        if (token) break; // Exit endpoint loop if token obtained
       } catch (error) {
         console.error(`Erro ao tentar autenticação em ${authUrl}:`, error);
         authError = error;
@@ -98,28 +116,47 @@ export const fetchUniversalAssistanceOffers = async (params: SearchParams): Prom
     }
 
     if (!token) {
-      // Se todas as tentativas de autenticação falharem, registra detalhes e lança erro
-      console.error("Todas as tentativas de autenticação falharam. Último erro:", authError);
+      // Special case: if all auth attempts failed, try to work without authentication
+      console.warn("Todas as tentativas de autenticação falharam. Tentando buscar planos sem autenticação.");
       
-      // Verifica se pode ser um problema com a origem
-      console.log("Verificando se pode ser um problema de CORS ou origem...");
-      console.log("Resposta HTTP da última tentativa:", authResponse?.status, authResponse?.statusText);
+      // Try to fetch plans directly
+      try {
+        const directPlansResponse = await fetch(`${baseUrl}/plans/list`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'Origin': window.location.origin
+          }
+        });
+        
+        if (directPlansResponse.ok) {
+          const plansData = await directPlansResponse.json();
+          console.log("Planos obtidos diretamente sem autenticação:", plansData);
+          
+          if (plansData && (plansData.plans || plansData.data)) {
+            const plans = plansData.plans || plansData.data || [];
+            return processPlans(plans);
+          }
+        }
+      } catch (directError) {
+        console.error("Falha ao tentar buscar planos diretamente:", directError);
+      }
       
-      throw new Error("Não foi possível autenticar com a Universal Assistance. A API pode estar bloqueando requisições do navegador por questões de CORS, ou as credenciais estão incorretas.");
+      // If direct fetch also failed, fall back to mock data
+      console.warn("Não foi possível autenticar ou buscar dados diretamente. Usando dados mockados.");
+      toast.info("Não foi possível conectar à API da Universal Assistance. Usando dados de demonstração.");
+      return generateMockOffers(5);
     }
 
-    // Calcula a duração da viagem em dias
+    // Prepare search parameters
     const tripDuration = calculateTripDuration(params.departureDate, params.returnDate);
-
-    // Formata as datas no padrão aceito pela API (YYYY-MM-DD)
     const departureFormatted = new Date(params.departureDate).toISOString().split('T')[0];
     const returnFormatted = new Date(params.returnDate).toISOString().split('T')[0];
+    const originCode = params.origin;
+    const destinationCode = params.destination;
 
-    // Use origin and destination codes sent by the searcher
-    const originCode = params.origin; // BR or INT-BR
-    const destinationCode = params.destination; // NAMERICA, SAMERICA, EUROPE, etc.
-
-    console.log("Parâmetros formatados para busca:", {
+    console.log("Parâmetros para busca:", {
       origin: originCode,
       destination: destinationCode,
       departure: departureFormatted,
@@ -128,109 +165,176 @@ export const fetchUniversalAssistanceOffers = async (params: SearchParams): Prom
       passengers: params.passengers.ages
     });
 
-    // Prepara os dados para busca de seguro
-    const searchData = {
-      origin: originCode,
-      destination: destinationCode,
-      departure_date: departureFormatted,
-      return_date: returnFormatted,
-      trip_duration: tripDuration,
-      passengers: params.passengers.ages.map(age => ({ age })),
-      contact: {
-        phone: params.phone || ""
-      }
-    };
-
-    // Tenta diferentes endpoints possíveis de busca
-    const possibleSearchEndpoints = [
-      `${baseUrl}/api/plans`,
-      `${baseUrl}/v1/plans`,
+    // Try different search endpoints and request formats
+    const searchEndpoints = [
       `${baseUrl}/plans/search`,
       `${baseUrl}/plans`,
-      `${baseUrl}/v2/plans`
+      `${baseUrl}/offers`,
+      `${baseUrl}/search`
     ];
     
-    let plansData = null;
-    let searchError = null;
+    // Different request format options
+    const searchFormats = [
+      // Standard format
+      {
+        body: JSON.stringify({
+          origin: originCode,
+          destination: destinationCode,
+          departure_date: departureFormatted,
+          return_date: returnFormatted,
+          trip_duration: tripDuration,
+          passengers: params.passengers.ages.map(age => ({ age }))
+        })
+      },
+      // Alternative format
+      {
+        body: JSON.stringify({
+          origin: originCode,
+          destination: destinationCode,
+          departureDate: departureFormatted,
+          returnDate: returnFormatted,
+          tripDuration: tripDuration,
+          travelers: params.passengers.ages.map(age => ({ age }))
+        })
+      }
+    ];
     
-    // Tenta cada endpoint de busca até um funcionar
-    for (const searchUrl of possibleSearchEndpoints) {
-      try {
-        console.log("Tentando URL para busca de planos:", searchUrl);
-        console.log("Dados da requisição:", searchData);
-        
-        // Faz a requisição para buscar planos
-        const response = await fetch(searchUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify(searchData),
-          mode: 'cors' // Explicitamente solicita CORS
-        });
-
-        console.log("Status da resposta de busca:", response.status);
-        
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error(`Erro na resposta de busca (${searchUrl}):`, errorText);
-          continue; // Tenta próximo endpoint
+    // Try each endpoint and format combination
+    for (const searchUrl of searchEndpoints) {
+      for (const format of searchFormats) {
+        try {
+          console.log(`Tentando buscar planos em ${searchUrl} com formato:`, format.body);
+          
+          const searchResponse = await fetch(searchUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+              'Authorization': `Bearer ${token}`,
+              'Origin': window.location.origin
+            },
+            body: format.body
+          });
+          
+          console.log(`Status da resposta (${searchUrl}):`, searchResponse.status);
+          
+          if (!searchResponse.ok) {
+            continue; // Try next format
+          }
+          
+          const plansData = await searchResponse.json();
+          console.log("Resposta de busca bem-sucedida:", plansData);
+          
+          if (plansData) {
+            const plans = plansData.plans || plansData.data || plansData.offers || plansData.results || [];
+            if (plans && plans.length > 0) {
+              return processPlans(plans);
+            }
+          }
+        } catch (searchError) {
+          console.error(`Erro ao buscar planos em ${searchUrl}:`, searchError);
         }
-
-        plansData = await response.json();
-        console.log("Resposta de busca de planos bem-sucedida:", plansData);
-        break; // Sai do loop se dados obtidos
-      } catch (error) {
-        console.error(`Erro ao buscar planos em ${searchUrl}:`, error);
-        searchError = error;
       }
     }
-
-    if (!plansData) {
-      console.error("Todas as tentativas de busca de planos falharam. Último erro:", searchError);
-      console.warn("Usando dados de demonstração devido a falha na API.");
-      toast.info("Não foi possível conectar à API da Universal Assistance. Usando dados de demonstração.");
-      return generateMockOffers(4); // Retorna dados mockados se nenhum plano for encontrado
-    }
-
-    // Verifica se a resposta contém planos
-    const plans = plansData.plans || plansData.results || plansData.data || [];
     
-    if (!plans || !Array.isArray(plans) || plans.length === 0) {
-      console.warn("Nenhum plano retornado na resposta");
-      toast.info("Nenhum plano foi retornado pela API. Usando dados de demonstração.");
-      return generateMockOffers(3); // Retorna dados mockados se nenhum plano for retornado
+    // If all search attempts failed, try to get plans without search parameters
+    try {
+      console.log("Tentando obter planos genéricos sem parâmetros de busca");
+      const genericResponse = await fetch(`${baseUrl}/plans`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (genericResponse.ok) {
+        const genericData = await genericResponse.json();
+        const genericPlans = genericData.plans || genericData.data || [];
+        
+        if (genericPlans.length > 0) {
+          console.log("Planos genéricos encontrados:", genericPlans);
+          return processPlans(genericPlans);
+        }
+      }
+    } catch (genericError) {
+      console.error("Erro ao buscar planos genéricos:", genericError);
     }
-
-    // Mapeia a resposta da Universal Assistance para o formato interno
-    return plans.map((plan: any) => ({
-      id: plan.id || `universal-${Math.random().toString(36).substring(2, 9)}`,
-      providerId: "universal-assist",
-      name: plan.name || plan.title || "Plano Universal Assistance",
-      price: parseFloat(plan.price) || Math.floor(Math.random() * 300) + 100,
-      coverage: {
-        medical: plan.coverages?.medical || plan.medical_coverage || Math.floor(Math.random() * 80000) + 20000,
-        baggage: plan.coverages?.baggage || plan.baggage_coverage || Math.floor(Math.random() * 1500) + 500,
-        cancellation: plan.coverages?.cancellation || plan.cancellation_coverage || Math.floor(Math.random() * 3000) + 1000,
-        delay: plan.coverages?.delay || plan.delay_coverage || Math.floor(Math.random() * 300) + 100,
-      },
-      benefits: Array.isArray(plan.benefits) 
-        ? plan.benefits.map((b: any) => (typeof b === 'string' ? b : (b.name || ''))) 
-        : ["COVID-19", "Telemedicina", "Traslado médico"],
-      rating: plan.rating || 4.5,
-      recommended: plan.recommended || false,
-    }));
+    
+    // If all attempts failed, use mock data
+    console.warn("Nenhum plano encontrado. Usando dados mockados.");
+    toast.info("Não foi possível obter planos da API. Usando dados de demonstração.");
+    return generateMockOffers(5);
   } catch (error) {
     console.error("Erro ao buscar dados da Universal Assistance:", error);
-    toast.error("Erro ao buscar dados da Universal Assistance. A API pode estar bloqueando requisições do navegador (CORS) ou as credenciais podem estar incorretas.");
-    // Retorna dados mockados em caso de erro para evitar quebrar a aplicação
+    toast.error("Erro ao buscar dados da Universal Assistance. Usando dados de demonstração.");
     return generateMockOffers(5);
   }
 };
 
-// Função auxiliar para gerar ofertas mockadas com diferentes preços/coberturas
+// Helper function to process API plans into the app's format
+const processPlans = (plans: any[]): InsuranceOffer[] => {
+  return plans.map((plan: any, index: number) => ({
+    id: plan.id || `universal-${Math.random().toString(36).substring(2, 9)}`,
+    providerId: "universal-assist",
+    name: plan.name || plan.title || `Plano Universal ${index + 1}`,
+    price: parseFloat(plan.price || plan.total || "0") || Math.floor(Math.random() * 300) + 100,
+    coverage: {
+      medical: extractCoverage(plan, 'medical', 40000),
+      baggage: extractCoverage(plan, 'baggage', 1000),
+      cancellation: extractCoverage(plan, 'cancellation', 2000),
+      delay: extractCoverage(plan, 'delay', 200),
+    },
+    benefits: extractBenefits(plan),
+    rating: plan.rating || (4 + Math.random()),
+    recommended: index === 0, // Make the first one recommended
+  }));
+};
+
+// Helper function to extract coverage values
+const extractCoverage = (plan: any, type: string, defaultValue: number): number => {
+  // Try multiple possible paths to find the coverage value
+  if (plan.coverages?.[type]) return plan.coverages[type];
+  if (plan[`${type}_coverage`]) return plan[`${type}_coverage`];
+  if (plan.coverage?.[type]) return plan.coverage[type];
+  
+  // If coverage is an array, try to find by type
+  if (Array.isArray(plan.coverages)) {
+    const found = plan.coverages.find((c: any) => 
+      c.type === type || c.name?.toLowerCase().includes(type)
+    );
+    if (found) return found.value || found.amount || defaultValue;
+  }
+  
+  return defaultValue;
+};
+
+// Helper function to extract benefits
+const extractBenefits = (plan: any): string[] => {
+  // If benefits is already an array of strings, use it
+  if (Array.isArray(plan.benefits) && typeof plan.benefits[0] === 'string') {
+    return plan.benefits;
+  }
+  
+  // If benefits is an array of objects, extract names
+  if (Array.isArray(plan.benefits) && typeof plan.benefits[0] === 'object') {
+    return plan.benefits.map((b: any) => b.name || b.title || b.description || "Benefício");
+  }
+  
+  // If features exists, use it
+  if (Array.isArray(plan.features)) {
+    return plan.features.map((f: any) => {
+      if (typeof f === 'string') return f;
+      return f.name || f.title || f.description || "Recurso";
+    });
+  }
+  
+  // Default benefits
+  return ["COVID-19", "Telemedicina", "Traslado médico"];
+};
+
+// Function to generate mock offers
 const generateMockOffers = (count: number): InsuranceOffer[] => {
   const mockOffers: InsuranceOffer[] = [];
   
@@ -271,7 +375,6 @@ const generateMockOffers = (count: number): InsuranceOffer[] => {
   }
   
   console.log("Gerando ofertas mockadas:", mockOffers);
-  toast.info("Usando dados de demonstração pois não foi possível conectar à API.");
   
   return mockOffers;
 };

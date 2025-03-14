@@ -2,6 +2,8 @@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { InfoCircledIcon } from "@radix-ui/react-icons";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
 
 interface UniversalAssistanceFormProps {
   username: string;
@@ -60,16 +62,18 @@ const UniversalAssistanceForm = ({
         />
       </div>
       
-      <div className="bg-amber-50 border border-amber-200 p-3 rounded-md mt-2">
-        <p className="text-xs text-amber-800 flex items-start">
-          <span className="mr-1">⚠️</span>
-          <span>
-            Se você estiver enfrentando problemas de conexão, pode ser devido a restrições CORS da API. 
-            Nesse caso, a aplicação mostrará dados de demonstração.
-            Para uma integração completa, seria necessário criar um servidor intermediário ou habilitar CORS na API.
-          </span>
-        </p>
-      </div>
+      <Alert variant="warning" className="mt-3">
+        <AlertCircle className="h-4 w-4" />
+        <AlertDescription>
+          <p className="text-xs">
+            As APIs da Universal Assistance podem não permitir acesso direto do navegador por restrições de CORS.
+            Se encontrar problemas de conexão, a aplicação mostrará dados de demonstração.
+          </p>
+          <p className="text-xs mt-2">
+            Para uma integração completa, você precisaria implementar um servidor intermediário (proxy).
+          </p>
+        </AlertDescription>
+      </Alert>
     </>
   );
 };
