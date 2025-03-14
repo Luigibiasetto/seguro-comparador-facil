@@ -15,9 +15,9 @@ interface ApiConfigFormProps {
 
 const ApiConfigForm = ({ onOpenChange }: ApiConfigFormProps) => {
   const [apiProvider, setApiProvider] = useState<string>("universal-assist");
-  const [username, setUsername] = useState("luigi.biasetto");
-  const [password, setPassword] = useState("tIMES18");
-  const [baseUrl, setBaseUrl] = useState("https://api.universal-assistance.com");
+  const [username, setUsername] = useState("raphaelbellei");
+  const [password, setPassword] = useState("Anthony25");
+  const [baseUrl, setBaseUrl] = useState("https://api-br.universal-assistance.com");
   const [apiKey, setApiKey] = useState("");
   
   const handleSubmit = (e: React.FormEvent) => {

@@ -3,12 +3,12 @@ import { ApiConfig } from './types';
 
 // Default API configuration
 let apiConfig: ApiConfig = {
-  baseUrl: "https://api.universal-assistance.com", // Changed from api-br to api
+  baseUrl: "https://api-br.universal-assistance.com",
   apiKey: "",
   provider: "universal-assist",
   providerSettings: {
-    username: "luigi.biasetto",
-    password: "tIMES18"
+    username: "raphaelbellei",
+    password: "Anthony25"
   }
 };
 
