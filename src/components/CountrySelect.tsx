@@ -32,7 +32,8 @@ const CountrySelect = ({
   const filteredCountries = countries
     .filter(country => excludedCountry ? country.code !== excludedCountry : true)
     .filter(country => 
-      country.name.toLowerCase().includes(searchTerm.toLowerCase())
+      country.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      country.code.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
   // Encontra o país selecionado

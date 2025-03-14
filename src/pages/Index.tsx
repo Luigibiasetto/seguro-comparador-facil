@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -15,6 +14,7 @@ import { countries } from "@/lib/countries";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import ApiConfigModal from "@/components/ApiConfigModal";
+import CountrySelect from "@/components/CountrySelect";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -98,42 +98,21 @@ const Index = () => {
           >
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {/* Origin */}
-              <div>
-                <Label htmlFor="origin" className="text-sm font-medium block mb-2">
-                  De onde você vai?
-                </Label>
-                <Select onValueChange={setOrigin}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Selecione o país de origem" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Object.entries(countries).map(([key, country]) => (
-                      <SelectItem key={key} value={key}>
-                        {country.toString()}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              <CountrySelect
+                value={origin}
+                onChange={setOrigin}
+                label="De onde você vai?"
+                placeholder="Selecione o país de origem"
+              />
 
               {/* Destination */}
-              <div>
-                <Label htmlFor="destination" className="text-sm font-medium block mb-2">
-                  Para onde você vai?
-                </Label>
-                <Select onValueChange={setDestination}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Selecione o país de destino" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Object.entries(countries).map(([key, country]) => (
-                      <SelectItem key={key} value={key}>
-                        {country.toString()}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              <CountrySelect
+                value={destination}
+                onChange={setDestination}
+                label="Para onde você vai?"
+                placeholder="Selecione o país de destino"
+                excludedCountry={origin}
+              />
 
               {/* Date Range */}
               <div>
