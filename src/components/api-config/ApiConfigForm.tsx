@@ -24,6 +24,7 @@ const ApiConfigForm = ({ onOpenChange }: ApiConfigFormProps) => {
   // Campos específicos da Universal Assistance
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [apiCode, setApiCode] = useState("");
   
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,8 +37,8 @@ const ApiConfigForm = ({ onOpenChange }: ApiConfigFormProps) => {
       }
       
       // Verificar credenciais específicas para Universal Assistance
-      if (provider === "universal-assist" && (!username || !password)) {
-        toast.error("Por favor, insira o nome de usuário e senha para a Universal Assistance.");
+      if (provider === "universal-assist" && (!username || !password || !apiCode)) {
+        toast.error("Por favor, preencha todos os campos da Universal Assistance (usuário, senha e código da API).");
         return;
       }
       
@@ -62,7 +63,8 @@ const ApiConfigForm = ({ onOpenChange }: ApiConfigFormProps) => {
           config.baseUrl = "https://api.universalassistance.com/v1"; // URL base da Universal Assistance
           config.providerSettings = {
             username,
-            password
+            password,
+            apiCode,
           };
         } else {
           // Para outras APIs genéricas
@@ -111,6 +113,8 @@ const ApiConfigForm = ({ onOpenChange }: ApiConfigFormProps) => {
               setUsername={setUsername}
               password={password}
               setPassword={setPassword}
+              apiCode={apiCode}
+              setApiCode={setApiCode}
             />
           ) : (
             <GenericApiForm

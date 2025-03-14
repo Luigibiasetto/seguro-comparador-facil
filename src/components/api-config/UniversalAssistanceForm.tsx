@@ -7,13 +7,17 @@ interface UniversalAssistanceFormProps {
   setUsername: (value: string) => void;
   password: string;
   setPassword: (value: string) => void;
+  apiCode: string;
+  setApiCode: (value: string) => void;
 }
 
 const UniversalAssistanceForm = ({ 
   username, 
   setUsername, 
   password, 
-  setPassword 
+  setPassword,
+  apiCode,
+  setApiCode
 }: UniversalAssistanceFormProps) => {
   return (
     <>
@@ -36,6 +40,17 @@ const UniversalAssistanceForm = ({
           placeholder="Senha da API"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
+          required
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="apiCode">Código da API</Label>
+        <Input
+          id="apiCode"
+          placeholder="Código da API Universal Assistance"
+          value={apiCode}
+          onChange={(e) => setApiCode(e.target.value)}
           required
         />
       </div>

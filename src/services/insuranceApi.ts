@@ -47,6 +47,7 @@ interface ApiConfig {
     clientSecret?: string;
     username?: string;
     password?: string;
+    apiCode?: string;
     endpoint?: string;
   };
 }
@@ -136,8 +137,8 @@ const calculateTripDuration = (departureDate: string, returnDate: string): numbe
 // Integração específica com a API da Universal Assistance
 const fetchUniversalAssistanceOffers = async (params: SearchParams): Promise<InsuranceOffer[]> => {
   try {
-    if (!apiConfig.providerSettings?.username || !apiConfig.providerSettings?.password) {
-      throw new Error("Credenciais da Universal Assistance não configuradas");
+    if (!apiConfig.providerSettings?.username || !apiConfig.providerSettings?.password || !apiConfig.providerSettings?.apiCode) {
+      throw new Error("Credenciais da Universal Assistance não configuradas corretamente");
     }
 
     // Primeiro autenticar para obter o token
@@ -145,6 +146,7 @@ const fetchUniversalAssistanceOffers = async (params: SearchParams): Promise<Ins
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'X-API-Code': apiConfig.providerSettings.apiCode
       },
       body: JSON.stringify({
         username: apiConfig.providerSettings.username,
@@ -191,7 +193,8 @@ const fetchUniversalAssistanceOffers = async (params: SearchParams): Promise<Ins
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
+        'Authorization': `Bearer ${token}`,
+        'X-API-Code': apiConfig.providerSettings.apiCode
       },
       body: JSON.stringify(searchData)
     });
