@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plane, Calendar, ArrowRight } from "lucide-react";
+import { Plane, Calendar, ArrowRight, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
@@ -128,6 +128,14 @@ const SearchForm = ({ className = "", defaultExpanded = true }: SearchFormProps)
     
     // Navegar para a página de resultados
     navigate(`/resultados?${searchParams.toString()}`);
+  };
+
+  // Format the passenger information for display
+  const formatPassengerInfo = () => {
+    const { count, ages } = passengers;
+    const passengersText = count === 1 ? 'passageiro' : 'passageiros';
+    const agesText = ages.map(age => `${age} anos`).join(', ');
+    return `${count} ${passengersText} (${agesText})`;
   };
 
   return (
@@ -266,12 +274,20 @@ const SearchForm = ({ className = "", defaultExpanded = true }: SearchFormProps)
             </Popover>
           </div>
 
-          {/* Passageiros */}
-          <PassengerSelect
-            value={passengers}
-            onChange={setPassengers}
-            label="Passageiros"
-          />
+          {/* Passageiros com informação de idade */}
+          <div className="lg:col-span-2">
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              Passageiros e Idades
+            </label>
+            <PassengerSelect
+              value={passengers}
+              onChange={setPassengers}
+              label=""
+            />
+            <div className="mt-1 text-xs text-gray-500">
+              {formatPassengerInfo()}
+            </div>
+          </div>
 
           {/* Telefone (opcional) */}
           <div>
