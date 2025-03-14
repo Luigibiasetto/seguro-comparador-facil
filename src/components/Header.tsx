@@ -46,7 +46,7 @@ const Header = () => {
               className={({ isActive }) =>
                 `px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
                   isActive
-                    ? "bg-brand-50 text-brand-700"
+                    ? "bg-indigo-50 text-indigo-700"
                     : "text-gray-700 hover:bg-gray-100"
                 }`
               }
@@ -58,7 +58,7 @@ const Header = () => {
               className={({ isActive }) =>
                 `px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
                   isActive
-                    ? "bg-brand-50 text-brand-700"
+                    ? "bg-indigo-50 text-indigo-700"
                     : "text-gray-700 hover:bg-gray-100"
                 }`
               }
@@ -70,14 +70,14 @@ const Header = () => {
               className={({ isActive }) =>
                 `px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
                   isActive
-                    ? "bg-brand-50 text-brand-700"
+                    ? "bg-indigo-50 text-indigo-700"
                     : "text-gray-700 hover:bg-gray-100"
                 }`
               }
             >
               Sobre Nós
             </NavLink>
-            <Button size="sm" className="ml-2 bg-brand-600 hover:bg-brand-700">
+            <Button size="sm" className="ml-2 bg-indigo-600 hover:bg-indigo-700">
               <Phone className="h-3.5 w-3.5 mr-1.5" />
               Contato
             </Button>
@@ -106,7 +106,7 @@ const Header = () => {
                 className={({ isActive }) =>
                   `px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
                     isActive
-                      ? "bg-brand-50 text-brand-700"
+                      ? "bg-indigo-50 text-indigo-700"
                       : "text-gray-700 hover:bg-gray-100"
                   }`
                 }
@@ -119,7 +119,7 @@ const Header = () => {
                 className={({ isActive }) =>
                   `px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
                     isActive
-                      ? "bg-brand-50 text-brand-700"
+                      ? "bg-indigo-50 text-indigo-700"
                       : "text-gray-700 hover:bg-gray-100"
                   }`
                 }
@@ -132,7 +132,7 @@ const Header = () => {
                 className={({ isActive }) =>
                   `px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
                     isActive
-                      ? "bg-brand-50 text-brand-700"
+                      ? "bg-indigo-50 text-indigo-700"
                       : "text-gray-700 hover:bg-gray-100"
                   }`
                 }
@@ -142,7 +142,7 @@ const Header = () => {
               </NavLink>
               <Button
                 size="sm"
-                className="mt-2 bg-brand-600 hover:bg-brand-700"
+                className="mt-2 bg-indigo-600 hover:bg-indigo-700"
               >
                 <Phone className="h-3.5 w-3.5 mr-1.5" />
                 Contato
