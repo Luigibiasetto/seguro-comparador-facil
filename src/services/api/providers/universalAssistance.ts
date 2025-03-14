@@ -194,7 +194,8 @@ const generateMockOffers = (count: number): InsuranceOffer[] => {
         delay: Math.floor(price * 0.8)
       },
       benefits: benefits[i % benefits.length],
-      rating: (4 + Math.random()).toFixed(1) as unknown as number,
+      // Fix: Ensure rating is a number (not a string)
+      rating: 4 + Math.random(),
       recommended: i === 0, // Make the first one recommended
     });
   }
