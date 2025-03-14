@@ -9,6 +9,8 @@ interface UniversalAssistanceFormProps {
   setPassword: (value: string) => void;
   apiCode: string;
   setApiCode: (value: string) => void;
+  baseUrl: string;
+  setBaseUrl: (value: string) => void;
 }
 
 const UniversalAssistanceForm = ({ 
@@ -17,10 +19,26 @@ const UniversalAssistanceForm = ({
   password, 
   setPassword,
   apiCode,
-  setApiCode
+  setApiCode,
+  baseUrl,
+  setBaseUrl
 }: UniversalAssistanceFormProps) => {
   return (
     <>
+      <div className="space-y-2">
+        <Label htmlFor="baseUrl">URL Base da API</Label>
+        <Input
+          id="baseUrl"
+          placeholder="https://api.universalassistance.com/v1"
+          value={baseUrl}
+          onChange={(e) => setBaseUrl(e.target.value)}
+          required
+        />
+        <p className="text-xs text-muted-foreground mt-1">
+          URL base para a API da Universal Assistance (ex: https://api.universalassistance.com/v1)
+        </p>
+      </div>
+
       <div className="space-y-2">
         <Label htmlFor="username">Nome de usuário</Label>
         <Input

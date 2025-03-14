@@ -18,7 +18,7 @@ const ApiConfigForm = ({ onOpenChange }: ApiConfigFormProps) => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [apiCode, setApiCode] = useState("");
-  const [baseUrl, setBaseUrl] = useState("");
+  const [baseUrl, setBaseUrl] = useState("https://api.universalassistance.com/v1");
   const [apiKey, setApiKey] = useState("");
   
   const handleSubmit = (e: React.FormEvent) => {
@@ -33,12 +33,12 @@ const ApiConfigForm = ({ onOpenChange }: ApiConfigFormProps) => {
       
       if (apiProvider === "universal-assist") {
         // Verificar credenciais para Universal Assistance
-        if (!username || !password || !apiCode) {
-          toast.error("Por favor, preencha todos os campos da Universal Assistance (usuário, senha e código da API).");
+        if (!username || !password || !apiCode || !baseUrl) {
+          toast.error("Por favor, preencha todos os campos da Universal Assistance (URL base, usuário, senha e código da API).");
           return;
         }
         
-        config.baseUrl = "https://api.universalassistance.com/v1"; // URL base da Universal Assistance
+        config.baseUrl = baseUrl; // Usar URL base configurável
         config.providerSettings = {
           username,
           password,
@@ -84,6 +84,8 @@ const ApiConfigForm = ({ onOpenChange }: ApiConfigFormProps) => {
             setPassword={setPassword}
             apiCode={apiCode}
             setApiCode={setApiCode}
+            baseUrl={baseUrl}
+            setBaseUrl={setBaseUrl}
           />
         </div>
       ) : (
