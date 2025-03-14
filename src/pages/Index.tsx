@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -10,7 +11,6 @@ import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Slider } from "@/components/ui/slider";
 import { countries } from "@/lib/countries";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -109,7 +109,7 @@ const Index = () => {
                   <SelectContent>
                     {Object.entries(countries).map(([key, country]) => (
                       <SelectItem key={key} value={key}>
-                        {country}
+                        {country.toString()}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -128,7 +128,7 @@ const Index = () => {
                   <SelectContent>
                     {Object.entries(countries).map(([key, country]) => (
                       <SelectItem key={key} value={key}>
-                        {country}
+                        {country.toString()}
                       </SelectItem>
                     ))}
                   </SelectContent>
