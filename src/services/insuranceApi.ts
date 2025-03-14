@@ -81,9 +81,32 @@ const generateMockOffers = (params: SearchParams): InsuranceOffer[] => {
   const { destination, passengers } = params;
   const tripDuration = calculateTripDuration(params.departureDate, params.returnDate);
   
-  // Preço base por dia por pessoa
-  const basePricePerDay = destination === "US" || destination === "CA" ? 12 : 
-                          (["GB", "FR", "DE", "IT", "ES"].includes(destination) ? 10 : 8);
+  // Preço base por dia por pessoa com base no continente
+  let basePricePerDay = 8; // Valor padrão
+  
+  // Ajusta preço base conforme o continente
+  switch(destination) {
+    case "NAMERICA":
+      basePricePerDay = 12;
+      break;
+    case "EUROPE":
+      basePricePerDay = 10;
+      break;
+    case "ASIA":
+      basePricePerDay = 10;
+      break;
+    case "SAMERICA":
+      basePricePerDay = 6;
+      break;
+    case "AFRICA":
+      basePricePerDay = 9;
+      break;
+    case "OCEANIA":
+      basePricePerDay = 11;
+      break;
+    default:
+      basePricePerDay = 8;
+  }
   
   return mockProviders.flatMap(provider => {
     // Cada provedor terá algumas ofertas
@@ -185,9 +208,9 @@ const fetchUniversalAssistanceOffers = async (params: SearchParams): Promise<Ins
     const departureFormatted = new Date(params.departureDate).toISOString().split('T')[0];
     const returnFormatted = new Date(params.returnDate).toISOString().split('T')[0];
 
-    // Mapear países para os códigos aceitos pela Universal Assistance
-    const destinationCode = mapCountryCodeForUniversalAssistance(params.destination);
-    const originCode = mapCountryCodeForUniversalAssistance(params.origin);
+    // Usar códigos de origem e destino enviados pelo buscador
+    const originCode = params.origin; // BR ou INT-BR
+    const destinationCode = params.destination; // NAMERICA, SAMERICA, EUROPE, etc.
 
     console.log("Parâmetros formatados:", {
       origin: originCode,
@@ -267,38 +290,7 @@ const fetchUniversalAssistanceOffers = async (params: SearchParams): Promise<Ins
   }
 };
 
-// Função para mapear códigos de país para o formato da Universal Assistance
-const mapCountryCodeForUniversalAssistance = (countryCode: string): string => {
-  // Verificar se é um código de país válido
-  if (!countryCode || countryCode.toLowerCase() === 'brasil') {
-    return 'BR';
-  }
-  
-  // Converter códigos comuns
-  const mappings: Record<string, string> = {
-    "US": "USA",
-    "GB": "GBR",
-    "FR": "FRA",
-    "DE": "DEU",
-    "IT": "ITA",
-    "ES": "ESP",
-    "PT": "PRT",
-    "AR": "ARG",
-    "CL": "CHL",
-    "UY": "URY",
-    "PY": "PRY",
-    "BR": "BRA",
-    "CO": "COL",
-    "MX": "MEX",
-    "PE": "PER",
-    "EC": "ECU",
-    "BO": "BOL",
-    "VE": "VEN",
-    // Adicione mais mapeamentos conforme necessário
-  };
-  
-  return mappings[countryCode] || countryCode;
-};
+// Não precisamos mais mapear países para a Universal Assistance, pois agora usamos códigos de continente diretamente
 
 // Integração com a API real da seguradora
 const fetchRealInsurances = async (params: SearchParams): Promise<InsuranceOffer[]> => {

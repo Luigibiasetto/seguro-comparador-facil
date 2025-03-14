@@ -14,13 +14,13 @@ import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
-import CountrySelect from "./CountrySelect";
 import PassengerSelect from "./PassengerSelect";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 
-type OriginType = "brasil" | "estrangeiro-brasil";
-type DestinationType = "america-norte" | "america-sul" | "europa" | "asia" | "africa" | "oceania" | string;
+// Tipos para origem e destino com base na API da Universal Assistance
+type OriginType = "BR" | "INT-BR";
+type DestinationType = "NAMERICA" | "SAMERICA" | "EUROPE" | "ASIA" | "AFRICA" | "OCEANIA" | string;
 
 interface SearchFormProps {
   className?: string;
@@ -32,7 +32,7 @@ const SearchForm = ({ className = "", defaultExpanded = true }: SearchFormProps)
   const { toast } = useToast();
   
   // Estados do formulário
-  const [origin, setOrigin] = useState<OriginType>("brasil");
+  const [origin, setOrigin] = useState<OriginType>("BR");
   const [destination, setDestination] = useState<DestinationType>("");
   const [departureDate, setDepartureDate] = useState<Date | undefined>(
     new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // Data atual + 7 dias
@@ -50,14 +50,14 @@ const SearchForm = ({ className = "", defaultExpanded = true }: SearchFormProps)
   const [isDepartureFocused, setIsDepartureFocused] = useState(false);
   const [isReturnFocused, setIsReturnFocused] = useState(false);
 
-  // Continentes para seleção de destino
+  // Continentes para seleção de destino conforme especificações da Universal Assistance
   const continents = [
-    { id: "america-norte", name: "América do Norte" },
-    { id: "america-sul", name: "América do Sul" },
-    { id: "europa", name: "Europa" },
-    { id: "asia", name: "Ásia" },
-    { id: "africa", name: "África" },
-    { id: "oceania", name: "Oceania" },
+    { id: "NAMERICA", name: "América do Norte", code: "NAMERICA" },
+    { id: "SAMERICA", name: "América do Sul", code: "SAMERICA" },
+    { id: "EUROPE", name: "Europa", code: "EUROPE" },
+    { id: "ASIA", name: "Ásia", code: "ASIA" },
+    { id: "AFRICA", name: "África", code: "AFRICA" },
+    { id: "OCEANIA", name: "Oceania", code: "OCEANIA" },
   ];
 
   // Validações básicas
@@ -153,10 +153,22 @@ const SearchForm = ({ className = "", defaultExpanded = true }: SearchFormProps)
 
   // Gerar o rótulo do destino com base na origem
   const getDestinationLabel = () => {
-    if (origin === "estrangeiro-brasil") {
-      return "País de Origem";
+    if (origin === "INT-BR") {
+      return "Continente de Origem";
     } else {
-      return "Destino";
+      return "Continente de Destino";
+    }
+  };
+
+  // Obter rótulo para origem
+  const getOriginLabel = (originValue: OriginType) => {
+    switch (originValue) {
+      case "BR":
+        return "Brasil";
+      case "INT-BR":
+        return "Estrangeiro vindo ao Brasil";
+      default:
+        return originValue;
     }
   };
 
@@ -175,11 +187,11 @@ const SearchForm = ({ className = "", defaultExpanded = true }: SearchFormProps)
               className="flex flex-col space-y-2"
             >
               <div className="flex items-center space-x-2">
-                <RadioGroupItem value="brasil" id="option-brasil" />
+                <RadioGroupItem value="BR" id="option-brasil" />
                 <Label htmlFor="option-brasil">Brasil</Label>
               </div>
               <div className="flex items-center space-x-2">
-                <RadioGroupItem value="estrangeiro-brasil" id="option-estrangeiro-brasil" />
+                <RadioGroupItem value="INT-BR" id="option-estrangeiro-brasil" />
                 <Label htmlFor="option-estrangeiro-brasil">Estrangeiro vindo ao Brasil</Label>
               </div>
             </RadioGroup>
@@ -196,7 +208,7 @@ const SearchForm = ({ className = "", defaultExpanded = true }: SearchFormProps)
                 onChange={(e) => setDestination(e.target.value)}
                 className="w-full px-3 py-2.5 rounded-lg bg-transparent border-0 focus:ring-0 focus:outline-none"
               >
-                <option value="">Selecione {origin === "estrangeiro-brasil" ? "o continente de origem" : "o continente de destino"}</option>
+                <option value="">Selecione {origin === "INT-BR" ? "o continente de origem" : "o continente de destino"}</option>
                 {continents.map((continent) => (
                   <option key={continent.id} value={continent.id}>
                     {continent.name}

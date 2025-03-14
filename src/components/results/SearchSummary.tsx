@@ -20,9 +20,9 @@ const SearchSummary = ({
 }: SearchSummaryProps) => {
   const getOriginLabel = () => {
     switch (origin) {
-      case "brasil":
+      case "BR":
         return "Brasil";
-      case "estrangeiro-brasil":
+      case "INT-BR":
         return "Estrangeiro vindo ao Brasil";
       default:
         return formatCountry(origin);
@@ -30,22 +30,22 @@ const SearchSummary = ({
   };
 
   const getDestinationLabel = () => {
-    if (origin === "estrangeiro-brasil") {
+    if (origin === "INT-BR") {
       return "Continente de Origem";
     } else {
-      return "Destino";
+      return "Continente de Destino";
     }
   };
 
   const formatDestination = () => {
-    // Mapeamento dos continentes
+    // Mapeamento dos continentes conforme códigos da Universal Assistance
     const continentMap: Record<string, string> = {
-      'america-norte': 'América do Norte',
-      'america-sul': 'América do Sul',
-      'europa': 'Europa',
-      'asia': 'Ásia',
-      'africa': 'África',
-      'oceania': 'Oceania'
+      'NAMERICA': 'América do Norte',
+      'SAMERICA': 'América do Sul',
+      'EUROPE': 'Europa',
+      'ASIA': 'Ásia',
+      'AFRICA': 'África',
+      'OCEANIA': 'Oceania'
     };
 
     // Verifica se o destino é um continente
