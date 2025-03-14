@@ -16,8 +16,10 @@ import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import CountrySelect from "./CountrySelect";
 import PassengerSelect from "./PassengerSelect";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 
-type OriginType = "brasil" | "estrangeiro";
+type OriginType = "brasil" | "estrangeiro" | "estrangeiro-brasil";
 
 interface SearchFormProps {
   className?: string;
@@ -138,50 +140,51 @@ const SearchForm = ({ className = "", defaultExpanded = true }: SearchFormProps)
     return `${count} ${passengersText} (${agesText})`;
   };
 
+  // Gerar o rótulo do destino com base na origem
+  const getDestinationLabel = () => {
+    if (origin === "estrangeiro-brasil") {
+      return "País de Origem";
+    } else {
+      return "Destino";
+    }
+  };
+
   return (
     <div className={className}>
       <form onSubmit={handleSubmit} className="glass rounded-xl p-4 md:p-6 shadow-lg">
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
           {/* Seleção de Origem */}
           <div className="space-y-1.5">
-            <label className="block text-sm font-medium text-gray-700">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
               Origem
             </label>
-            <div className="flex shadow-sm rounded-lg overflow-hidden">
-              <button
-                type="button"
-                onClick={() => setOrigin("brasil")}
-                className={cn(
-                  "flex-1 py-2.5 px-3 text-sm font-medium transition-colors",
-                  origin === "brasil"
-                    ? "bg-brand-600 text-white"
-                    : "bg-white hover:bg-gray-50 text-gray-600"
-                )}
-              >
-                Brasil
-              </button>
-              <button
-                type="button"
-                onClick={() => setOrigin("estrangeiro")}
-                className={cn(
-                  "flex-1 py-2.5 px-3 text-sm font-medium transition-colors",
-                  origin === "estrangeiro"
-                    ? "bg-brand-600 text-white"
-                    : "bg-white hover:bg-gray-50 text-gray-600"
-                )}
-              >
-                Estrangeiro
-              </button>
-            </div>
+            <RadioGroup
+              value={origin}
+              onValueChange={(value) => setOrigin(value as OriginType)}
+              className="flex flex-col space-y-2"
+            >
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="brasil" id="option-brasil" />
+                <Label htmlFor="option-brasil">Brasileiro indo ao exterior</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="estrangeiro" id="option-estrangeiro" />
+                <Label htmlFor="option-estrangeiro">Estrangeiro</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="estrangeiro-brasil" id="option-estrangeiro-brasil" />
+                <Label htmlFor="option-estrangeiro-brasil">Estrangeiro vindo ao Brasil</Label>
+              </div>
+            </RadioGroup>
           </div>
 
           {/* Seleção de Destino */}
           <CountrySelect
             value={destination}
             onChange={setDestination}
-            label="Destino"
-            placeholder="Para onde você vai?"
-            excludedCountry={origin === "brasil" ? "BR" : undefined}
+            label={getDestinationLabel()}
+            placeholder={origin === "estrangeiro-brasil" ? "De onde você vem?" : "Para onde você vai?"}
+            excludedCountry={origin === "brasil" ? "BR" : (origin === "estrangeiro-brasil" ? undefined : "BR")}
           />
 
           {/* Datas */}
