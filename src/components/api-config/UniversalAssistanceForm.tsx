@@ -25,7 +25,7 @@ const UniversalAssistanceForm = ({
         <Label htmlFor="username">Nome de usuário</Label>
         <Input
           id="username"
-          placeholder="Usuário da API"
+          placeholder="Usuário fornecido pela Universal Assistance"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
           required
@@ -37,7 +37,7 @@ const UniversalAssistanceForm = ({
         <Input
           id="password"
           type="password"
-          placeholder="Senha da API"
+          placeholder="Senha fornecida pela Universal Assistance"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
@@ -53,6 +53,9 @@ const UniversalAssistanceForm = ({
           onChange={(e) => setApiCode(e.target.value)}
           required
         />
+        <p className="text-xs text-muted-foreground mt-1">
+          O código da API é fornecido pela Universal Assistance e é necessário para autenticação.
+        </p>
       </div>
     </>
   );

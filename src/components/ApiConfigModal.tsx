@@ -20,7 +20,7 @@ const ApiConfigModal = ({ open, onOpenChange }: ApiConfigModalProps) => {
         <DialogHeader>
           <DialogTitle>Configurar API de Seguros</DialogTitle>
           <DialogDescription>
-            Insira os detalhes da API da seguradora, incluindo o código da API se necessário, ou use dados simulados.
+            Insira os detalhes da API da Universal Assistance, incluindo o código da API, ou use dados simulados.
           </DialogDescription>
         </DialogHeader>
 

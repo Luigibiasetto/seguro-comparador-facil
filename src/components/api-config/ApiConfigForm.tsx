@@ -7,9 +7,7 @@ import { DialogClose, DialogFooter } from "@/components/ui/dialog";
 import { Check } from "lucide-react";
 import { toast } from "sonner";
 import { configureInsuranceAPI } from "@/services/insuranceApi";
-import ProviderSelect from "./ProviderSelect";
 import UniversalAssistanceForm from "./UniversalAssistanceForm";
-import GenericApiForm from "./GenericApiForm";
 
 interface ApiConfigFormProps {
   onOpenChange: (open: boolean) => void;
@@ -17,11 +15,6 @@ interface ApiConfigFormProps {
 
 const ApiConfigForm = ({ onOpenChange }: ApiConfigFormProps) => {
   const [useMock, setUseMock] = useState(true);
-  const [provider, setProvider] = useState("custom");
-  const [baseUrl, setBaseUrl] = useState("");
-  const [apiKey, setApiKey] = useState("");
-  
-  // Campos específicos da Universal Assistance
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [apiCode, setApiCode] = useState("");
@@ -30,56 +23,30 @@ const ApiConfigForm = ({ onOpenChange }: ApiConfigFormProps) => {
     e.preventDefault();
     
     try {
-      // Validar URL base se não estiver usando mock e for API personalizada
-      if (!useMock && provider === "custom" && !baseUrl) {
-        toast.error("Por favor, insira uma URL base válida.");
-        return;
-      }
-      
-      // Verificar credenciais específicas para Universal Assistance
-      if (provider === "universal-assist" && (!username || !password || !apiCode)) {
+      // Verificar credenciais específicas para Universal Assistance se não estiver usando mock
+      if (!useMock && (!username || !password || !apiCode)) {
         toast.error("Por favor, preencha todos os campos da Universal Assistance (usuário, senha e código da API).");
         return;
-      }
-      
-      // Se não estiver usando mock e tiver URL, validar a URL
-      if (!useMock && provider === "custom" && baseUrl) {
-        try {
-          new URL(baseUrl);
-        } catch (error) {
-          toast.error("Por favor, insira uma URL base válida.");
-          return;
-        }
       }
       
       // Configurar a API
       const config: any = { useMock };
       
       if (!useMock) {
-        config.provider = provider === "custom" ? "" : provider;
-        
-        // Se tiver selecionado Universal Assistance
-        if (provider === "universal-assist") {
-          config.baseUrl = "https://api.universalassistance.com/v1"; // URL base da Universal Assistance
-          config.providerSettings = {
-            username,
-            password,
-            apiCode,
-          };
-        } else {
-          // Para outras APIs genéricas
-          config.baseUrl = baseUrl;
-          if (apiKey) config.apiKey = apiKey;
-        }
+        config.provider = "universal-assist";
+        config.baseUrl = "https://api.universalassistance.com/v1"; // URL base da Universal Assistance
+        config.providerSettings = {
+          username,
+          password,
+          apiCode,
+        };
       }
       
       configureInsuranceAPI(config);
       
       const successMessage = useMock 
         ? "Configurado para usar dados simulados." 
-        : provider === "universal-assist"
-          ? "API da Universal Assistance configurada com sucesso!"
-          : "API configurada com sucesso!";
+        : "API da Universal Assistance configurada com sucesso!";
           
       toast.success(successMessage);
       
@@ -104,28 +71,17 @@ const ApiConfigForm = ({ onOpenChange }: ApiConfigFormProps) => {
       </div>
 
       {!useMock && (
-        <>
-          <ProviderSelect value={provider} onValueChange={setProvider} />
-
-          {provider === "universal-assist" ? (
-            <UniversalAssistanceForm 
-              username={username}
-              setUsername={setUsername}
-              password={password}
-              setPassword={setPassword}
-              apiCode={apiCode}
-              setApiCode={setApiCode}
-            />
-          ) : (
-            <GenericApiForm
-              baseUrl={baseUrl}
-              setBaseUrl={setBaseUrl}
-              apiKey={apiKey}
-              setApiKey={setApiKey}
-              disabled={provider !== "custom"}
-            />
-          )}
-        </>
+        <div className="bg-muted p-4 rounded-md">
+          <h3 className="text-sm font-medium mb-3">Universal Assistance API</h3>
+          <UniversalAssistanceForm 
+            username={username}
+            setUsername={setUsername}
+            password={password}
+            setPassword={setPassword}
+            apiCode={apiCode}
+            setApiCode={setApiCode}
+          />
+        </div>
       )}
 
       <DialogFooter>
