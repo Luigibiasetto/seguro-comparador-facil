@@ -14,9 +14,13 @@ export const fetchUniversalAssistanceOffers = async (params: SearchParams): Prom
       throw new Error("Credenciais da Universal Assistance não configuradas corretamente");
     }
 
+    // Remove trailing slashes from baseUrl if present
+    const baseUrl = apiConfig.baseUrl.replace(/\/+$/, "");
+    console.log("Base URL normalizada:", baseUrl);
+
     // First authenticate to get the token
     console.log("Tentando autenticação com a Universal Assistance...");
-    const authResponse = await fetch(`${apiConfig.baseUrl}/auth/login`, {
+    const authResponse = await fetch(`${baseUrl}/auth/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -81,10 +85,10 @@ export const fetchUniversalAssistanceOffers = async (params: SearchParams): Prom
     };
 
     console.log("Enviando requisição para busca de planos:", searchData);
-    console.log("URL da requisição:", `${apiConfig.baseUrl}/plans/search`);
+    console.log("URL da requisição:", `${baseUrl}/plans/search`);
 
     // Make the request to search for plans
-    const response = await fetch(`${apiConfig.baseUrl}/plans/search`, {
+    const response = await fetch(`${baseUrl}/plans/search`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

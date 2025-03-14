@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { DialogClose, DialogFooter } from "@/components/ui/dialog";
 import { Check } from "lucide-react";
 import { toast } from "sonner";
-import { configureInsuranceAPI } from "@/services/insuranceApi";
+import { configureInsuranceAPI } from "@/services/api/config";
 import UniversalAssistanceForm from "./UniversalAssistanceForm";
 import ProviderSelect from "./ProviderSelect";
 import GenericApiForm from "./GenericApiForm";
@@ -17,7 +17,7 @@ const ApiConfigForm = ({ onOpenChange }: ApiConfigFormProps) => {
   const [apiProvider, setApiProvider] = useState<string>("universal-assist");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [baseUrl, setBaseUrl] = useState("https://api.universalassistance.com/v1");
+  const [baseUrl, setBaseUrl] = useState("https://api.universal-assistance.com/v1");
   const [apiKey, setApiKey] = useState("");
   
   const handleSubmit = (e: React.FormEvent) => {
@@ -37,7 +37,8 @@ const ApiConfigForm = ({ onOpenChange }: ApiConfigFormProps) => {
           return;
         }
         
-        config.baseUrl = baseUrl; // Usar URL base configurável
+        // Ensure baseUrl doesn't have trailing slashes
+        config.baseUrl = baseUrl.replace(/\/+$/, "");
         config.providerSettings = {
           username,
           password
@@ -49,7 +50,7 @@ const ApiConfigForm = ({ onOpenChange }: ApiConfigFormProps) => {
           return;
         }
         
-        config.baseUrl = baseUrl;
+        config.baseUrl = baseUrl.replace(/\/+$/, "");
         if (apiKey) {
           config.apiKey = apiKey;
         }
