@@ -163,7 +163,7 @@ const fetchUniversalAssistanceOffers = async (params: SearchParams): Promise<Ins
     console.log("Iniciando busca de dados da Universal Assistance");
     console.log("Configuração da API:", apiConfig);
     
-    if (!apiConfig.providerSettings?.username || !apiConfig.providerSettings?.password || !apiConfig.providerSettings?.apiCode) {
+    if (!apiConfig.providerSettings?.username || !apiConfig.providerSettings?.password) {
       throw new Error("Credenciais da Universal Assistance não configuradas corretamente");
     }
 
@@ -172,8 +172,7 @@ const fetchUniversalAssistanceOffers = async (params: SearchParams): Promise<Ins
     const authResponse = await fetch(`${apiConfig.baseUrl}/auth/token`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'X-API-Code': apiConfig.providerSettings.apiCode
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({
         username: apiConfig.providerSettings.username,
@@ -242,8 +241,7 @@ const fetchUniversalAssistanceOffers = async (params: SearchParams): Promise<Ins
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-        'X-API-Code': apiConfig.providerSettings.apiCode
+        'Authorization': `Bearer ${token}`
       },
       body: JSON.stringify(searchData)
     });

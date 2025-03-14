@@ -7,8 +7,6 @@ interface UniversalAssistanceFormProps {
   setUsername: (value: string) => void;
   password: string;
   setPassword: (value: string) => void;
-  apiCode: string;
-  setApiCode: (value: string) => void;
   baseUrl: string;
   setBaseUrl: (value: string) => void;
 }
@@ -18,8 +16,6 @@ const UniversalAssistanceForm = ({
   setUsername, 
   password, 
   setPassword,
-  apiCode,
-  setApiCode,
   baseUrl,
   setBaseUrl
 }: UniversalAssistanceFormProps) => {
@@ -60,20 +56,6 @@ const UniversalAssistanceForm = ({
           onChange={(e) => setPassword(e.target.value)}
           required
         />
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="apiCode">Código da API</Label>
-        <Input
-          id="apiCode"
-          placeholder="Código da API Universal Assistance"
-          value={apiCode}
-          onChange={(e) => setApiCode(e.target.value)}
-          required
-        />
-        <p className="text-xs text-muted-foreground mt-1">
-          O código da API é fornecido pela Universal Assistance e é necessário para autenticação.
-        </p>
       </div>
     </>
   );
