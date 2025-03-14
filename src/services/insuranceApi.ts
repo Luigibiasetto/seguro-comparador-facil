@@ -1,4 +1,3 @@
-
 import { toast } from "sonner";
 
 // Tipos para as APIs
@@ -36,6 +35,26 @@ export interface SearchParams {
   };
   phone?: string;
 }
+
+// Configurações da API
+interface ApiConfig {
+  baseUrl: string;
+  apiKey?: string;
+  useMock: boolean;
+}
+
+let apiConfig: ApiConfig = {
+  baseUrl: "",
+  apiKey: "",
+  useMock: true // Por padrão, usa dados simulados
+};
+
+// Função para configurar a API
+export const configureInsuranceAPI = (config: Partial<ApiConfig>) => {
+  apiConfig = { ...apiConfig, ...config };
+  console.log("API configurada:", apiConfig);
+  return apiConfig;
+};
 
 // Lista de provedores simulados (será substituída pela API real)
 const mockProviders: InsuranceProvider[] = [
@@ -104,17 +123,115 @@ const calculateTripDuration = (departureDate: string, returnDate: string): numbe
   return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 };
 
-// Função que será substituída pela integração real com a API
+// Integração com a API real da seguradora
+const fetchRealInsurances = async (params: SearchParams): Promise<InsuranceOffer[]> => {
+  try {
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+    };
+    
+    // Adiciona chave de API se fornecida
+    if (apiConfig.apiKey) {
+      headers['Authorization'] = `Bearer ${apiConfig.apiKey}`;
+    }
+    
+    // Preparar os dados para a API da seguradora
+    const requestData = {
+      origin: params.origin,
+      destination: params.destination,
+      departureDate: params.departureDate,
+      returnDate: params.returnDate,
+      passengers: params.passengers,
+      phone: params.phone || ""
+    };
+    
+    // Fazer a solicitação à API
+    const response = await fetch(`${apiConfig.baseUrl}/search`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(requestData)
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Erro na API: ${response.status} ${response.statusText}`);
+    }
+    
+    const data = await response.json();
+    
+    // Mapear a resposta da API para o formato interno
+    // Nota: Ajuste este mapeamento conforme a estrutura real da API
+    return data.offers.map((apiOffer: any) => ({
+      id: apiOffer.id || `offer-${Math.random().toString(36).substring(2, 9)}`,
+      providerId: apiOffer.providerId || "unknown",
+      name: apiOffer.name || "Plano de Seguro",
+      price: apiOffer.price || 0,
+      coverage: {
+        medical: apiOffer.coverage?.medical || 0,
+        baggage: apiOffer.coverage?.baggage || 0,
+        cancellation: apiOffer.coverage?.cancellation || 0,
+        delay: apiOffer.coverage?.delay || 0,
+        other: apiOffer.coverage?.other || undefined,
+      },
+      benefits: apiOffer.benefits || [],
+      rating: apiOffer.rating || 3.5,
+      recommended: apiOffer.recommended || false,
+    }));
+  } catch (error) {
+    console.error("Erro ao buscar dados da API de seguros:", error);
+    throw error;
+  }
+};
+
+// Função para buscar provedores reais
+const fetchRealProviders = async (): Promise<InsuranceProvider[]> => {
+  try {
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+    };
+    
+    if (apiConfig.apiKey) {
+      headers['Authorization'] = `Bearer ${apiConfig.apiKey}`;
+    }
+    
+    const response = await fetch(`${apiConfig.baseUrl}/providers`, {
+      method: 'GET',
+      headers,
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Erro na API: ${response.status} ${response.statusText}`);
+    }
+    
+    const data = await response.json();
+    
+    // Mapear a resposta da API para o formato interno
+    return data.providers.map((apiProvider: any) => ({
+      id: apiProvider.id || `provider-${Math.random().toString(36).substring(2, 9)}`,
+      name: apiProvider.name || "Seguradora",
+      logo: apiProvider.logo || "/placeholder.svg",
+    }));
+  } catch (error) {
+    console.error("Erro ao buscar provedores de seguros:", error);
+    throw error;
+  }
+};
+
+// Função que será chamada por componentes React - decide entre mock ou API real
 export const searchInsurances = async (params: SearchParams): Promise<InsuranceOffer[]> => {
   try {
-    // Simular tempo de resposta da API
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    // Gerar ofertas simuladas
-    const offers = generateMockOffers(params);
-    
-    // Ordenar por preço (padrão)
-    return offers.sort((a, b) => a.price - b.price);
+    // Usando API real ou dados simulados
+    if (!apiConfig.useMock && apiConfig.baseUrl) {
+      return await fetchRealInsurances(params);
+    } else {
+      // Simular tempo de resposta da API
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      // Gerar ofertas simuladas
+      const offers = generateMockOffers(params);
+      
+      // Ordenar por preço (padrão)
+      return offers.sort((a, b) => a.price - b.price);
+    }
   } catch (error) {
     console.error("Erro ao buscar seguros:", error);
     toast.error("Erro ao buscar seguros. Por favor, tente novamente.");
@@ -122,11 +239,21 @@ export const searchInsurances = async (params: SearchParams): Promise<InsuranceO
   }
 };
 
-// Função para obter os provedores (será substituída pela API real)
+// Função para obter os provedores (API real ou mock)
 export const getInsuranceProviders = async (): Promise<InsuranceProvider[]> => {
-  // Simular tempo de resposta da API
-  await new Promise(resolve => setTimeout(resolve, 800));
-  return mockProviders;
+  try {
+    if (!apiConfig.useMock && apiConfig.baseUrl) {
+      return await fetchRealProviders();
+    } else {
+      // Simular tempo de resposta da API
+      await new Promise(resolve => setTimeout(resolve, 800));
+      return mockProviders;
+    }
+  } catch (error) {
+    console.error("Erro ao obter provedores:", error);
+    toast.error("Erro ao carregar as seguradoras. Por favor, tente novamente.");
+    return mockProviders;
+  }
 };
 
 // Função para preparar os parâmetros da URL para a busca

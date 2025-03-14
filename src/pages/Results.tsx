@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -6,14 +5,15 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { 
   Filter, ArrowLeft, Star, ChevronDown, ChevronUp, Check,
-  ArrowUpDown, Loader2, Info
+  ArrowUpDown, Loader2, Info, MoreHorizontal
 } from "lucide-react";
 import { 
   InsuranceOffer, 
   searchInsurances, 
   getInsuranceProviders, 
   parseSearchParams,
-  InsuranceProvider 
+  InsuranceProvider,
+  configureInsuranceAPI 
 } from "@/services/insuranceApi";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -53,6 +53,17 @@ import {
 } from "@/components/ui/pagination";
 import { formatCountry } from "@/lib/countries";
 import { toast } from "sonner";
+import ApiConfigModal from "@/components/ApiConfigModal";
+
+// Componente PaginationEllipsis que estava faltando
+const PaginationEllipsis = () => {
+  return (
+    <div className="flex h-9 w-9 items-center justify-center">
+      <MoreHorizontal className="h-4 w-4" />
+      <span className="sr-only">Mais páginas</span>
+    </div>
+  );
+};
 
 // Definição de tipos para os filtros e ordenação
 type SortType = "price" | "coverage" | "rating";
@@ -95,6 +106,7 @@ const Results = () => {
     returnDate: new Date(parsedParams.returnDate),
     passengers: parsedParams.passengers,
   });
+  const [isApiConfigOpen, setIsApiConfigOpen] = useState(false);
 
   // Paginação
   const [currentPage, setCurrentPage] = useState(1);
@@ -270,7 +282,7 @@ const Results = () => {
       <main className="flex-grow pt-20 pb-12">
         <div className="container mx-auto px-4 max-w-7xl">
           {/* Resumo da busca e navegação de volta */}
-          <div className="mb-6">
+          <div className="mb-6 flex justify-between items-start">
             <Button
               variant="ghost"
               className="mb-4 pl-0 text-gray-600"
@@ -280,27 +292,35 @@ const Results = () => {
               Voltar à busca
             </Button>
             
-            <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
-              <h2 className="text-lg font-semibold mb-3">Resumo da busca</h2>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                <div>
-                  <p className="text-gray-500">Destino</p>
-                  <p className="font-medium">{formatCountry(searchSummary.destination)}</p>
-                </div>
-                <div>
-                  <p className="text-gray-500">Período</p>
-                  <p className="font-medium">
-                    {format(searchSummary.departureDate, "dd/MM/yyyy", { locale: ptBR })} a{" "}
-                    {format(searchSummary.returnDate, "dd/MM/yyyy", { locale: ptBR })}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-gray-500">Passageiros</p>
-                  <p className="font-medium">
-                    {searchSummary.passengers.count} {searchSummary.passengers.count === 1 ? "passageiro" : "passageiros"}{" "}
-                    ({searchSummary.passengers.ages.map(age => `${age} anos`).join(", ")})
-                  </p>
-                </div>
+            <Button
+              variant="outline"
+              onClick={() => setIsApiConfigOpen(true)}
+              className="text-gray-600"
+            >
+              Configurar API
+            </Button>
+          </div>
+          
+          <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
+            <h2 className="text-lg font-semibold mb-3">Resumo da busca</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+              <div>
+                <p className="text-gray-500">Destino</p>
+                <p className="font-medium">{formatCountry(searchSummary.destination)}</p>
+              </div>
+              <div>
+                <p className="text-gray-500">Período</p>
+                <p className="font-medium">
+                  {format(searchSummary.departureDate, "dd/MM/yyyy", { locale: ptBR })} a{" "}
+                  {format(searchSummary.returnDate, "dd/MM/yyyy", { locale: ptBR })}
+                </p>
+              </div>
+              <div>
+                <p className="text-gray-500">Passageiros</p>
+                <p className="font-medium">
+                  {searchSummary.passengers.count} {searchSummary.passengers.count === 1 ? "passageiro" : "passageiros"}{" "}
+                  ({searchSummary.passengers.ages.map(age => `${age} anos`).join(", ")})
+                </p>
               </div>
             </div>
           </div>
@@ -752,6 +772,12 @@ const Results = () => {
       </main>
       
       <Footer />
+      
+      {/* Modal de configuração da API */}
+      <ApiConfigModal 
+        open={isApiConfigOpen} 
+        onOpenChange={setIsApiConfigOpen} 
+      />
     </div>
   );
 };

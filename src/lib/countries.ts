@@ -1,4 +1,3 @@
-
 export interface Country {
   name: string;
   code: string;
@@ -227,3 +226,15 @@ export const countries: Country[] = [
   { name: "Zâmbia", code: "ZM" },
   { name: "Zimbábue", code: "ZW" }
 ];
+
+// Função para formatar o código do país para um nome legível
+export const formatCountry = (countryCode: string): string => {
+  // Buscar o país na lista de países
+  const country = countries.find(c => c.code === countryCode.toUpperCase());
+  if (country) {
+    return country.name;
+  }
+  
+  // Caso o código do país não seja encontrado, retornar o próprio código
+  return countryCode;
+};
