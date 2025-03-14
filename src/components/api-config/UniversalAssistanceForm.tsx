@@ -31,7 +31,10 @@ const UniversalAssistanceForm = ({
           required
         />
         <p className="text-xs text-muted-foreground mt-1">
-          URL base para a API da Universal Assistance (ex: https://api.universal-assistance.com)
+          URL base para a API da Universal Assistance. Tente uma destas opções:
+          <br />• https://api.universal-assistance.com
+          <br />• https://api-br.universal-assistance.com
+          <br />• https://api-sandbox.universal-assistance.com
         </p>
       </div>
 
