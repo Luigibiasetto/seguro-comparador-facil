@@ -31,7 +31,13 @@ const ApiConfigForm = ({ onOpenChange }: ApiConfigFormProps) => {
         useMock: false,
         provider: apiProvider,
         useProxy,
-        proxyUrl: useProxy ? proxyUrl : undefined
+        proxyUrl: useProxy ? proxyUrl : undefined,
+        fallbackProxies: [
+          "https://corsproxy.io/?",
+          "https://cors-proxy.htmldriven.com/?url=",
+          "https://cors.bridged.cc/",
+          "https://proxy.cors.sh/"
+        ]
       };
       
       if (apiProvider === "universal-assist") {
@@ -70,6 +76,7 @@ const ApiConfigForm = ({ onOpenChange }: ApiConfigFormProps) => {
       configureInsuranceAPI(config);
       
       toast.success(`API ${apiProvider === "universal-assist" ? "da Universal Assistance" : "personalizada"} configurada com sucesso!`);
+      toast.info("Se você estiver na página de resultados, atualize a página para aplicar as configurações.");
       onOpenChange(false);
     } catch (error) {
       console.error("Erro ao configurar API:", error);

@@ -78,6 +78,7 @@ export interface ApiConfig {
   provider?: string;
   useProxy?: boolean; // Added proxy flag
   proxyUrl?: string; // Added proxy URL
+  fallbackProxies?: string[]; // Added array of fallback proxies
   providerSettings?: {
     clientId?: string;
     clientSecret?: string;
