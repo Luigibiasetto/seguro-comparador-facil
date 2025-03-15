@@ -7,6 +7,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import ApiConfigModal from "@/components/ApiConfigModal";
 import SearchForm from "@/components/SearchForm";
+import CustomerReviews from "@/components/CustomerReviews";
 import { secureStore, secureRetrieve } from "@/services/security/dataSecurity";
 
 const Index = () => {
@@ -161,6 +162,9 @@ const Index = () => {
             </div>
           </section>
         </div>
+        
+        {/* Customer Reviews Section */}
+        <CustomerReviews />
       </main>
       
       <Footer />
