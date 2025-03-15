@@ -21,6 +21,13 @@ import { Button } from "../ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { Calendar } from "../ui/calendar";
 import { cn } from "@/lib/utils";
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "../ui/select";
 
 interface CustomerFormProps {
   isBrazilianOrigin: boolean;
@@ -60,7 +67,7 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ isBrazilianOrigin, onSubmit
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      documentType: isBrazilianOrigin ? "cpf" : "passport",
+      documentType: "cpf", // Always set CPF as default
       documentNumber: "",
       fullName: "",
       email: "",
@@ -107,13 +114,18 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ isBrazilianOrigin, onSubmit
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Tipo de Documento</FormLabel>
-                  <select
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                    {...field}
+                  <Select 
+                    onValueChange={field.onChange} 
+                    defaultValue={field.value}
                   >
-                    <option value="cpf">CPF</option>
-                    <option value="passport">Passaporte</option>
-                  </select>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Selecione o tipo de documento" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="cpf">CPF</SelectItem>
+                      <SelectItem value="passport">Passaporte (apenas estrangeiros vindo ao Brasil)</SelectItem>
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}
