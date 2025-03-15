@@ -4,7 +4,8 @@ import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
-import { Check, ChevronDown, ChevronUp } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Check, ChevronDown, ChevronUp, Shield, Clock, MapPin } from "lucide-react";
 import { secureStore } from "@/services/security/dataSecurity";
 import { InsuranceOffer, InsuranceProvider } from "@/services/insuranceApi";
 
@@ -36,24 +37,53 @@ const InsuranceOfferCard = ({
     navigate('/checkout');
   };
 
+  const provider = providers.find(p => p.id === offer.providerId) || { name: "Seguradora", logo: "/placeholder.svg" };
+
+  // Destaque para planos recomendados
+  const isRecommended = offer.recommended;
+
   return (
-    <Card className="overflow-hidden">
+    <Card className={`overflow-hidden transition-all duration-200 ${isRecommended ? 'border-primary border-2 shadow-lg' : ''}`}>
+      {isRecommended && (
+        <div className="bg-primary text-white text-center py-1 text-xs font-medium">
+          PLANO RECOMENDADO
+        </div>
+      )}
       <CardContent className="p-0">
         <div className="p-6">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-2">
                 <h3 className="text-lg font-bold">
-                  {providers.find(p => p.id === offer.providerId)?.name || "Seguradora"}
+                  {provider.name}
                 </h3>
+                {offer.rating >= 4.5 && (
+                  <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
+                    Excelente
+                  </Badge>
+                )}
               </div>
               <div className="text-muted-foreground text-sm mb-2">
                 {offer.name}
               </div>
-              <div className="flex flex-wrap gap-2 my-2">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-2 my-3">
+                <div className="flex items-center text-sm">
+                  <Shield className="w-4 h-4 mr-1 text-primary" />
+                  <span>Médica: {formatPrice(offer.coverage.medical)}</span>
+                </div>
+                <div className="flex items-center text-sm">
+                  <Clock className="w-4 h-4 mr-1 text-primary" />
+                  <span>Atendimento 24h</span>
+                </div>
+                <div className="flex items-center text-sm">
+                  <MapPin className="w-4 h-4 mr-1 text-primary" />
+                  <span>Cobertura Mundial</span>
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2 mt-3">
                 {offer.benefits.slice(0, 3).map(benefit => (
                   <div key={benefit} className="bg-muted px-2 py-1 rounded-md text-xs flex items-center">
-                    <Check className="w-3 h-3 mr-1" />
+                    <Check className="w-3 h-3 mr-1 text-green-500" />
                     {benefit}
                   </div>
                 ))}
@@ -68,10 +98,15 @@ const InsuranceOfferCard = ({
               <div className="text-2xl font-bold text-primary">
                 {formatPrice(offer.price)}
               </div>
-              <div className="text-sm text-muted-foreground mb-2">
-                Cobertura médica: {formatPrice(offer.coverage.medical)}
+              <div className="text-xs text-muted-foreground mb-3">
+                por pessoa para toda a viagem
               </div>
-              <Button onClick={handleBuy}>Contratar</Button>
+              <Button 
+                onClick={handleBuy}
+                className={`${isRecommended ? 'bg-green-600 hover:bg-green-700' : ''}`}
+              >
+                Contratar
+              </Button>
             </div>
           </div>
           
@@ -100,19 +135,19 @@ const InsuranceOfferCard = ({
                   <TableBody>
                     <TableRow>
                       <TableCell>Médica</TableCell>
-                      <TableCell className="text-right">{formatPrice(offer.coverage.medical)}</TableCell>
+                      <TableCell className="text-right font-medium">{formatPrice(offer.coverage.medical)}</TableCell>
                     </TableRow>
                     <TableRow>
                       <TableCell>Bagagem</TableCell>
-                      <TableCell className="text-right">{formatPrice(offer.coverage.baggage)}</TableCell>
+                      <TableCell className="text-right font-medium">{formatPrice(offer.coverage.baggage)}</TableCell>
                     </TableRow>
                     <TableRow>
                       <TableCell>Cancelamento</TableCell>
-                      <TableCell className="text-right">{formatPrice(offer.coverage.cancellation)}</TableCell>
+                      <TableCell className="text-right font-medium">{formatPrice(offer.coverage.cancellation)}</TableCell>
                     </TableRow>
                     <TableRow>
                       <TableCell>Atraso</TableCell>
-                      <TableCell className="text-right">{formatPrice(offer.coverage.delay)}</TableCell>
+                      <TableCell className="text-right font-medium">{formatPrice(offer.coverage.delay)}</TableCell>
                     </TableRow>
                   </TableBody>
                 </Table>
@@ -123,7 +158,7 @@ const InsuranceOfferCard = ({
                 <div className="grid grid-cols-1 gap-2">
                   {offer.benefits.map(benefit => (
                     <div key={benefit} className="flex items-center gap-2">
-                      <Check className="text-primary w-4 h-4" />
+                      <Check className="text-green-500 w-4 h-4" />
                       <span>{benefit}</span>
                     </div>
                   ))}

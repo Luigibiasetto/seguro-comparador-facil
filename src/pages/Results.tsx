@@ -16,6 +16,8 @@ import ApiConfigModal from "@/components/ApiConfigModal";
 import SearchSummary from "@/components/results/SearchSummary";
 import ResultsFilters from "@/components/results/ResultsFilters";
 import ResultsList from "@/components/results/ResultsList";
+import HighlightedBenefits from "@/components/results/HighlightedBenefits";
+import FrequentlyAskedQuestions from "@/components/results/FrequentlyAskedQuestions";
 import { secureStore } from "@/services/security/dataSecurity";
 
 type SortType = "price" | "coverage"; // Removed rating
@@ -166,7 +168,7 @@ const Results = () => {
     <div className="min-h-screen flex flex-col">
       <Header />
       
-      <main className="flex-grow pt-20 pb-12">
+      <main className="flex-grow pt-20 pb-12 bg-gray-50">
         <div className="container mx-auto px-4 max-w-7xl">
           <div className="flex items-center justify-between mb-6">
             <Button 
@@ -189,6 +191,8 @@ const Results = () => {
           </div>
           
           <SearchSummary {...searchSummary} />
+          
+          <HighlightedBenefits />
           
           <div className="mb-4 flex items-center">
             <div className={`w-3 h-3 rounded-full mr-2 ${dataEncrypted ? 'bg-green-500' : 'bg-red-500'}`}></div>
@@ -226,6 +230,8 @@ const Results = () => {
               searchParams={parsedParams}
             />
           </div>
+          
+          <FrequentlyAskedQuestions />
         </div>
       </main>
       
