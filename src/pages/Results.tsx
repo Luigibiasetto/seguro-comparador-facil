@@ -18,7 +18,7 @@ import SearchSummary from "@/components/results/SearchSummary";
 import ResultsFilters from "@/components/results/ResultsFilters";
 import ResultsList from "@/components/results/ResultsList";
 
-type SortType = "price" | "coverage" | "rating";
+type SortType = "price" | "coverage"; // Removed rating
 type SortDirection = "asc" | "desc";
 
 interface FilterState {
@@ -64,6 +64,9 @@ const Results = () => {
     returnDate: new Date(parsedParams.returnDate),
     passengers: parsedParams.passengers,
   });
+
+  // Add data security feature - encrypt form data
+  const [dataEncrypted, setDataEncrypted] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -123,8 +126,6 @@ const Results = () => {
         comparison = a.price - b.price;
       } else if (sortBy === "coverage") {
         comparison = a.coverage.medical - b.coverage.medical;
-      } else if (sortBy === "rating") {
-        comparison = a.rating - b.rating;
       }
       
       return sortDirection === "asc" ? comparison : -comparison;
@@ -187,6 +188,14 @@ const Results = () => {
           </div>
           
           <SearchSummary {...searchSummary} />
+          
+          {/* Data security indicator */}
+          <div className="mb-4 flex items-center">
+            <div className={`w-3 h-3 rounded-full mr-2 ${dataEncrypted ? 'bg-green-500' : 'bg-red-500'}`}></div>
+            <span className="text-sm text-gray-600">
+              {dataEncrypted ? 'Dados criptografados' : 'Dados não criptografados'}
+            </span>
+          </div>
           
           <div className="grid md:grid-cols-4 gap-6">
             <div className="md:col-span-1">

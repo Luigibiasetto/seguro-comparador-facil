@@ -1,15 +1,30 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { MapPin, CalendarDays, User, Settings } from "lucide-react";
+import { MapPin, CalendarDays, User, Settings, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import ApiConfigModal from "@/components/ApiConfigModal";
 import SearchForm from "@/components/SearchForm";
+import { secureStore, secureRetrieve } from "@/services/security/dataSecurity";
 
 const Index = () => {
   const [isApiConfigOpen, setIsApiConfigOpen] = useState(false);
+  const [hasAcceptedPrivacy, setHasAcceptedPrivacy] = useState<boolean>(false);
+
+  // Check if user has previously accepted privacy terms
+  useEffect(() => {
+    const privacyAccepted = secureRetrieve<boolean>("privacy-accepted");
+    if (privacyAccepted) {
+      setHasAcceptedPrivacy(true);
+    }
+  }, []);
+
+  const handleAcceptPrivacy = () => {
+    secureStore("privacy-accepted", true);
+    setHasAcceptedPrivacy(true);
+  };
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -36,7 +51,7 @@ const Index = () => {
               Compare as melhores opções de seguro viagem e viaje com tranquilidade.
             </motion.p>
             
-            <div className="mt-6">
+            <div className="mt-6 flex flex-wrap gap-3 justify-center">
               <Button 
                 variant="outline" 
                 size="sm"
@@ -46,8 +61,30 @@ const Index = () => {
                 <Settings className="w-4 h-4" />
                 Configurar API
               </Button>
+              
+              <div className="flex items-center text-sm text-green-600 gap-1">
+                <Shield className="w-4 h-4" />
+                <span>Seus dados estão protegidos</span>
+              </div>
             </div>
           </div>
+
+          {/* Privacy Notice */}
+          {!hasAcceptedPrivacy && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+              className="bg-indigo-50 p-4 rounded-lg mb-8 text-center"
+            >
+              <p className="text-sm text-gray-700 mb-2">
+                Valorizamos sua privacidade. Seus dados são criptografados e armazenados com segurança.
+              </p>
+              <Button size="sm" onClick={handleAcceptPrivacy}>
+                Entendi e Aceito
+              </Button>
+            </motion.div>
+          )}
 
           {/* Search Form */}
           <motion.div
@@ -108,12 +145,12 @@ const Index = () => {
                 transition={{ duration: 0.5, delay: 0.9 }}
                 className="text-center"
               >
-                <User className="mx-auto h-10 w-10 text-brand-600 mb-4" />
+                <Shield className="mx-auto h-10 w-10 text-brand-600 mb-4" />
                 <h3 className="text-xl font-medium text-gray-900 mb-2">
-                  Opções para Todos os Viajantes
+                  Segurança de Dados
                 </h3>
                 <p className="text-gray-600">
-                  Seguros personalizados para viajantes individuais, famílias e grupos.
+                  Seus dados pessoais são criptografados e protegidos com os mais altos padrões de segurança.
                 </p>
               </motion.div>
             </div>

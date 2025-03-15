@@ -19,7 +19,7 @@ export interface InsuranceOffer {
     other?: Record<string, number>;
   };
   benefits: string[];
-  rating: number;
+  rating?: number; // Made optional
   recommended: boolean;
 }
 
