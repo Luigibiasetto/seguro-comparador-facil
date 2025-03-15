@@ -9,6 +9,11 @@ let apiConfig: ApiConfig = {
   providerSettings: {
     username: "raphaelbellei",
     password: "Anthony25"
+  },
+  headers: {
+    'Origin': window.location.origin,
+    'Accept': 'application/json',
+    'Content-Type': 'application/json'
   }
 };
 

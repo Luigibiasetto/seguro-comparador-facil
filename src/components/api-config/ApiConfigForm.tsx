@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { DialogClose, DialogFooter } from "@/components/ui/dialog";
@@ -41,6 +42,13 @@ const ApiConfigForm = ({ onOpenChange }: ApiConfigFormProps) => {
         config.providerSettings = {
           username,
           password
+        };
+        
+        // Add additional headers that might be needed
+        config.headers = {
+          'Origin': window.location.origin,
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
         };
       } else if (apiProvider === "custom") {
         // Verificar URL base para API personalizada
