@@ -19,6 +19,8 @@ const ApiConfigForm = ({ onOpenChange }: ApiConfigFormProps) => {
   const [password, setPassword] = useState("Anthony25");
   const [baseUrl, setBaseUrl] = useState("https://api-br.universal-assistance.com/v1");
   const [apiKey, setApiKey] = useState("");
+  const [useProxy, setUseProxy] = useState(true);
+  const [proxyUrl, setProxyUrl] = useState("https://corsproxy.io/?");
   
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,7 +29,9 @@ const ApiConfigForm = ({ onOpenChange }: ApiConfigFormProps) => {
       // Configuração baseada no provedor selecionado
       const config: any = { 
         useMock: false,
-        provider: apiProvider
+        provider: apiProvider,
+        useProxy,
+        proxyUrl: useProxy ? proxyUrl : undefined
       };
       
       if (apiProvider === "universal-assist") {
@@ -90,6 +94,10 @@ const ApiConfigForm = ({ onOpenChange }: ApiConfigFormProps) => {
             setPassword={setPassword}
             baseUrl={baseUrl}
             setBaseUrl={setBaseUrl}
+            useProxy={useProxy}
+            setUseProxy={setUseProxy}
+            proxyUrl={proxyUrl}
+            setProxyUrl={setProxyUrl}
           />
         </div>
       ) : (

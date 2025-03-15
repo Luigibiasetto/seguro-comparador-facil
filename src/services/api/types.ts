@@ -76,6 +76,8 @@ export interface ApiConfig {
   baseUrl: string;
   apiKey?: string;
   provider?: string;
+  useProxy?: boolean; // Added proxy flag
+  proxyUrl?: string; // Added proxy URL
   providerSettings?: {
     clientId?: string;
     clientSecret?: string;
@@ -83,5 +85,5 @@ export interface ApiConfig {
     password?: string;
     endpoint?: string;
   };
-  headers?: Record<string, string>; // Added headers property
+  headers?: Record<string, string>;
 }

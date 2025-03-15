@@ -37,7 +37,17 @@ export const searchInsurances = async (params: SearchParams): Promise<InsuranceO
         return offers;
       } catch (error) {
         console.error("Erro com a API da Universal Assistance:", error);
-        toast.error("Erro ao buscar dados da Universal Assistance. Verifique o console para mais detalhes.");
+        
+        // Check if error is related to CORS and proxy is not enabled
+        if (!apiConfig.useProxy && error instanceof Error && 
+            (error.message.includes('CORS') || error.message.includes('Failed to fetch'))) {
+          toast.error("Erro de CORS detectado. Considere ativar a opção de proxy nas configurações da API.", {
+            duration: 8000
+          });
+        } else {
+          toast.error("Erro ao buscar dados da Universal Assistance. Verifique o console para mais detalhes.");
+        }
+        
         return []; // Return empty array
       }
     } else {

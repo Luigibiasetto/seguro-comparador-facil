@@ -6,6 +6,8 @@ let apiConfig: ApiConfig = {
   baseUrl: "https://api-br.universal-assistance.com/v1",
   apiKey: "",
   provider: "universal-assist",
+  useProxy: true, // Added proxy support
+  proxyUrl: "https://corsproxy.io/?", // Default CORS proxy
   providerSettings: {
     username: "raphaelbellei",
     password: "Anthony25"
@@ -49,4 +51,17 @@ export const configureInsuranceAPI = (config: Partial<ApiConfig>) => {
 // Getter for the current API configuration
 export const getApiConfig = (): ApiConfig => {
   return { ...apiConfig };
+};
+
+// Helper function to get URL with or without proxy
+export const getApiUrl = (endpoint: string): string => {
+  const config = getApiConfig();
+  const baseUrl = config.baseUrl;
+  const fullUrl = `${baseUrl}${endpoint.startsWith('/') ? endpoint : '/' + endpoint}`;
+  
+  if (config.useProxy && config.proxyUrl) {
+    return `${config.proxyUrl}${encodeURIComponent(fullUrl)}`;
+  }
+  
+  return fullUrl;
 };
