@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ArrowLeft, Settings } from "lucide-react";
@@ -66,7 +65,6 @@ const Results = () => {
     passengers: parsedParams.passengers,
   });
 
-  // Add data security feature - encrypt form data
   const [dataEncrypted, setDataEncrypted] = useState(true);
 
   useEffect(() => {
@@ -82,7 +80,6 @@ const Results = () => {
         setOffers(offersData);
         setFilteredOffers(offersData);
         
-        // Store search params for checkout
         secureStore('searchParams', parsedParams);
         
         setFilters({
@@ -193,7 +190,6 @@ const Results = () => {
           
           <SearchSummary {...searchSummary} />
           
-          {/* Data security indicator */}
           <div className="mb-4 flex items-center">
             <div className={`w-3 h-3 rounded-full mr-2 ${dataEncrypted ? 'bg-green-500' : 'bg-red-500'}`}></div>
             <span className="text-sm text-gray-600">

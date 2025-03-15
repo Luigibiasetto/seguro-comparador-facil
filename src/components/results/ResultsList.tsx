@@ -1,6 +1,6 @@
 
 import { Skeleton } from "@/components/ui/skeleton";
-import { InsuranceOffer, InsuranceProvider } from "@/services/insuranceApi";
+import { InsuranceOffer, InsuranceProvider, SearchParams } from "@/services/api/types";
 import ResultsLoader from "./ResultsLoader";
 import NoResultsFound from "./NoResultsFound";
 import InsuranceOfferCard from "./InsuranceOfferCard";
@@ -24,6 +24,7 @@ interface ResultsListProps {
   totalPages: number;
   setCurrentPage: (page: number) => void;
   itemsPerPage: number;
+  searchParams?: SearchParams; // Added searchParams as optional prop
 }
 
 const ResultsList = ({
@@ -39,7 +40,8 @@ const ResultsList = ({
   currentPage,
   totalPages,
   setCurrentPage,
-  itemsPerPage
+  itemsPerPage,
+  searchParams
 }: ResultsListProps) => {
   return (
     <div className="md:col-span-3">
@@ -72,6 +74,7 @@ const ResultsList = ({
                 offer={offer}
                 providers={providers}
                 formatPrice={formatPrice}
+                searchParams={searchParams}
               />
             ))}
           </div>
