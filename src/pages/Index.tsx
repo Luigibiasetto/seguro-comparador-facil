@@ -86,11 +86,16 @@ const Index = () => {
             </motion.div>
           )}
 
-          {/* Search Form */}
+          {/* Search Form with Gradient Background */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.4 }}
+            className="rounded-xl p-1" 
+            style={{ 
+              background: "linear-gradient(180deg, #F2FCE2 0%, #FFFFFF 100%)",
+              boxShadow: "0 4px 14px rgba(0, 0, 0, 0.08)" 
+            }}
           >
             <SearchForm />
           </motion.div>
@@ -113,7 +118,7 @@ const Index = () => {
                 transition={{ duration: 0.5, delay: 0.7 }}
                 className="text-center"
               >
-                <MapPin className="mx-auto h-10 w-10 text-brand-600 mb-4" />
+                <MapPin className="mx-auto h-10 w-10 text-green-500 mb-4" />
                 <h3 className="text-xl font-medium text-gray-900 mb-2">
                   Ampla Cobertura Geográfica
                 </h3>
@@ -129,7 +134,7 @@ const Index = () => {
                 transition={{ duration: 0.5, delay: 0.8 }}
                 className="text-center"
               >
-                <CalendarDays className="mx-auto h-10 w-10 text-brand-600 mb-4" />
+                <CalendarDays className="mx-auto h-10 w-10 text-green-500 mb-4" />
                 <h3 className="text-xl font-medium text-gray-900 mb-2">
                   Flexibilidade de Datas
                 </h3>
@@ -145,7 +150,7 @@ const Index = () => {
                 transition={{ duration: 0.5, delay: 0.9 }}
                 className="text-center"
               >
-                <Shield className="mx-auto h-10 w-10 text-brand-600 mb-4" />
+                <Shield className="mx-auto h-10 w-10 text-green-500 mb-4" />
                 <h3 className="text-xl font-medium text-gray-900 mb-2">
                   Segurança de Dados
                 </h3>
