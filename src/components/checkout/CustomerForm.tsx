@@ -25,6 +25,7 @@ import {
   SelectTrigger,
   SelectValue
 } from "../ui/select";
+import CountrySelect from "../CountrySelect";
 
 interface CustomerFormProps {
   isBrazilianOrigin: boolean;
@@ -83,7 +84,7 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ isBrazilianOrigin, onSubmit
         complement: "",
         city: "",
         state: "",
-        country: isBrazilianOrigin ? "Brasil" : "",
+        country: "BR", // Default country set to Brazil
       },
       acceptTerms: false,
     },
@@ -138,6 +139,45 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ isBrazilianOrigin, onSubmit
       console.error("Error fetching address by CEP:", error);
     } finally {
       setIsLoadingCep(false);
+    }
+  };
+  
+  // Format birth date input (DD/MM/YYYY)
+  const formatBirthDate = (value: string) => {
+    // Remove non-digits
+    const digits = value.replace(/\D/g, '');
+    let formatted = '';
+    
+    // Format with slashes (DD/MM/YYYY)
+    if (digits.length > 0) {
+      formatted += digits.substring(0, Math.min(2, digits.length));
+    }
+    
+    if (digits.length > 2) {
+      formatted += '/' + digits.substring(2, Math.min(4, digits.length));
+    }
+    
+    if (digits.length > 4) {
+      formatted += '/' + digits.substring(4, Math.min(8, digits.length));
+    }
+    
+    return formatted;
+  };
+  
+  // Format phone with DDD in parentheses
+  const formatPhone = (value: string) => {
+    // Remove non-digits
+    const digits = value.replace(/\D/g, '');
+    
+    if (digits.length === 0) return '';
+    
+    // Format: (XX) XXXXX-XXXX
+    if (digits.length <= 2) {
+      return `(${digits}`;
+    } else if (digits.length <= 7) {
+      return `(${digits.substring(0, 2)}) ${digits.substring(2)}`;
+    } else {
+      return `(${digits.substring(0, 2)}) ${digits.substring(2, 7)}-${digits.substring(7, Math.min(11, digits.length))}`;
     }
   };
 
@@ -200,7 +240,7 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ isBrazilianOrigin, onSubmit
               )}
             />
 
-            {/* Birth Date (text input) */}
+            {/* Birth Date with auto-formatting */}
             <FormField
               control={form.control}
               name="birthDate"
@@ -210,7 +250,12 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ isBrazilianOrigin, onSubmit
                   <FormControl>
                     <Input 
                       placeholder="DD/MM/AAAA" 
-                      {...field} 
+                      value={field.value}
+                      onChange={(e) => {
+                        const formatted = formatBirthDate(e.target.value);
+                        field.onChange(formatted);
+                      }}
+                      maxLength={10}
                     />
                   </FormControl>
                   <FormMessage />
@@ -233,7 +278,7 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ isBrazilianOrigin, onSubmit
               )}
             />
 
-            {/* Phone */}
+            {/* Phone with autoformatting */}
             <FormField
               control={form.control}
               name="phone"
@@ -241,7 +286,15 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ isBrazilianOrigin, onSubmit
                 <FormItem>
                   <FormLabel>Telefone</FormLabel>
                   <FormControl>
-                    <Input placeholder="Digite seu telefone" {...field} />
+                    <Input 
+                      placeholder="(DDD) XXXXX-XXXX" 
+                      value={field.value}
+                      onChange={(e) => {
+                        const formatted = formatPhone(e.target.value);
+                        field.onChange(formatted);
+                      }}
+                      maxLength={15}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -267,6 +320,7 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ isBrazilianOrigin, onSubmit
                 )}
               />
 
+              {/* Emergency Phone with autoformatting */}
               <FormField
                 control={form.control}
                 name="emergencyContact.phone"
@@ -274,7 +328,15 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ isBrazilianOrigin, onSubmit
                   <FormItem>
                     <FormLabel>Telefone</FormLabel>
                     <FormControl>
-                      <Input placeholder="Telefone do contato de emergência" {...field} />
+                      <Input 
+                        placeholder="(DDD) XXXXX-XXXX" 
+                        value={field.value}
+                        onChange={(e) => {
+                          const formatted = formatPhone(e.target.value);
+                          field.onChange(formatted);
+                        }}
+                        maxLength={15}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -287,7 +349,7 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ isBrazilianOrigin, onSubmit
           <div className="pt-4 border-t border-border">
             <h3 className="text-lg font-medium mb-4">Endereço</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* CEP (moved to first position) */}
+              {/* CEP (positioned first) */}
               <FormField
                 control={form.control}
                 name="address.zipCode"
@@ -398,6 +460,7 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ isBrazilianOrigin, onSubmit
                 )}
               />
 
+              {/* Country selection using CountrySelect component */}
               <FormField
                 control={form.control}
                 name="address.country"
@@ -405,7 +468,13 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ isBrazilianOrigin, onSubmit
                   <FormItem>
                     <FormLabel>País</FormLabel>
                     <FormControl>
-                      <Input placeholder="Digite o país" {...field} />
+                      <CountrySelect
+                        value={field.value}
+                        onChange={field.onChange}
+                        label=""
+                        placeholder="Selecione o país"
+                        className="p-0 m-0"
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
