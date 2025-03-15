@@ -9,6 +9,7 @@ import ApiConfigModal from "@/components/ApiConfigModal";
 import SearchForm from "@/components/SearchForm";
 import CustomerReviews from "@/components/CustomerReviews";
 import { secureStore, secureRetrieve } from "@/services/security/dataSecurity";
+import { Link } from "react-router-dom";
 
 const Index = () => {
   const [isApiConfigOpen, setIsApiConfigOpen] = useState(false);
@@ -68,6 +69,16 @@ const Index = () => {
                 <span>Seus dados estão protegidos</span>
               </div>
             </div>
+          </div>
+
+          {/* Admin Link (discreto no canto inferior) */}
+          <div className="text-right mb-4">
+            <Link 
+              to="/admin/login" 
+              className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              Acesso Administrativo
+            </Link>
           </div>
 
           {/* Privacy Notice */}
