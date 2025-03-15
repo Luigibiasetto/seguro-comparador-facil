@@ -83,4 +83,5 @@ export interface ApiConfig {
     password?: string;
     endpoint?: string;
   };
+  headers?: Record<string, string>; // Added headers property
 }
