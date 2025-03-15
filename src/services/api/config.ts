@@ -13,7 +13,9 @@ let apiConfig: ApiConfig = {
   headers: {
     'Origin': window.location.origin,
     'Accept': 'application/json',
-    'Content-Type': 'application/json'
+    'Content-Type': 'application/json',
+    'X-Requested-With': 'XMLHttpRequest',
+    'Access-Control-Allow-Origin': '*'
   }
 };
 
@@ -25,6 +27,20 @@ export const configureInsuranceAPI = (config: Partial<ApiConfig>) => {
   if (apiConfig.baseUrl) {
     apiConfig.baseUrl = apiConfig.baseUrl.replace(/\/+$/, "");
   }
+  
+  // Ensure headers are properly set
+  if (!apiConfig.headers) {
+    apiConfig.headers = {};
+  }
+  
+  // Set critical headers for API requests
+  apiConfig.headers = {
+    ...apiConfig.headers,
+    'Origin': window.location.origin,
+    'Accept': 'application/json',
+    'Content-Type': 'application/json',
+    'X-Requested-With': 'XMLHttpRequest'
+  };
   
   console.log("API configurada:", apiConfig);
   return apiConfig;

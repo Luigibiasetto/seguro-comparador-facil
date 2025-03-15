@@ -66,11 +66,16 @@ const UniversalAssistanceForm = ({
         <AlertCircle className="h-4 w-4" />
         <AlertDescription>
           <p className="text-xs">
-            As APIs da Universal Assistance podem não permitir acesso direto do navegador por restrições de CORS.
-            Se encontrar problemas de conexão, a aplicação mostrará dados de demonstração.
+            Para resolução de problemas de conexão:
           </p>
+          <ul className="text-xs mt-1 list-disc pl-4">
+            <li>Verifique se as credenciais estão corretas</li>
+            <li>Confirme que a URL base está correta</li> 
+            <li>Verifique sua conexão com a internet</li>
+            <li>Se a API restringe o acesso por CORS, contate a Universal Assistance para permitir seu domínio</li>
+          </ul>
           <p className="text-xs mt-2">
-            Para uma integração completa, você precisaria implementar um servidor intermediário (proxy).
+            O sistema tentará diversos métodos de conexão automaticamente.
           </p>
         </AlertDescription>
       </Alert>

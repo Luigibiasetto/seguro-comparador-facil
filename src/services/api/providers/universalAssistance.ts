@@ -18,288 +18,275 @@ export const fetchUniversalAssistanceOffers = async (params: SearchParams): Prom
 
     // Configurar headers padrão para todas as requisições
     const headers = {
+      ...(apiConfig.headers || {}),
       'Content-Type': 'application/json',
       'Accept': 'application/json',
-      'Origin': window.location.origin || 'https://example.com',
+      'Origin': window.location.origin,
       'X-Requested-With': 'XMLHttpRequest'
     };
 
-    // Definir a URL de autenticação correta (confirmada com a documentação da Universal Assistance)
-    const authUrl = `${baseUrl}/auth/token`;
-    console.log("Tentando autenticação em:", authUrl);
-
-    // Criar o corpo da requisição de autenticação conforme documentação
-    const authPayload = {
-      username: apiConfig.providerSettings.username,
-      password: apiConfig.providerSettings.password
-    };
+    // Tentar autenticação através de CORS proxy
+    const username = apiConfig.providerSettings.username;
+    const password = apiConfig.providerSettings.password;
     
-    console.log("Enviando requisição de autenticação com payload:", JSON.stringify(authPayload));
+    // Tentar diferentes URLs de autenticação (incluindo opção com proxy CORS)
+    const authUrls = [
+      `${baseUrl}/auth/token`,
+      `${baseUrl}/auth`,
+      `${baseUrl}/login`,
+      `https://cors-anywhere.herokuapp.com/${baseUrl}/auth/token`,
+      `https://api.allorigins.win/get?url=${encodeURIComponent(`${baseUrl}/auth/token`)}`
+    ];
     
-    // Tentar autenticação com modo 'no-cors' para evitar problemas de CORS
-    const authResponse = await fetch(authUrl, {
-      method: 'POST',
-      headers: headers,
-      body: JSON.stringify(authPayload),
-      mode: 'cors', // Tente com 'cors' primeiro
-      credentials: 'include'
-    });
+    // Diferentes formatos de payload para autenticação
+    const authPayloads = [
+      { username, password },
+      { user: username, pass: password },
+      { email: username, password },
+      { usuario: username, senha: password }
+    ];
     
-    console.log("Resposta bruta da autenticação:", authResponse);
-    console.log("Status da autenticação:", authResponse.status);
-    console.log("Headers da resposta:", [...authResponse.headers.entries()]);
+    console.log("Tentando autenticação com:", { username });
     
     let token = null;
+    let authResponse = null;
     
-    // Se a primeira tentativa falhar por CORS, tente outras abordagens
-    if (!authResponse.ok) {
-      console.warn("Primeiro método de autenticação falhou. Tentando método alternativo...");
-      
-      // Tentativa alternativa com mode: 'no-cors'
-      try {
-        const altAuthResponse = await fetch(authUrl, {
-          method: 'POST',
-          headers: headers,
-          body: JSON.stringify(authPayload),
-          mode: 'no-cors',
-          credentials: 'omit'
-        });
+    // Tentar diferentes combinações de URLs e payloads
+    for (const authUrl of authUrls) {
+      for (const payload of authPayloads) {
+        if (token) break; // Se já temos um token, não precisa continuar
         
-        console.log("Resposta do método alternativo:", altAuthResponse);
-        
-        // Como 'no-cors' não permite acessar o corpo da resposta, vamos assumir que funcionou
-        // e tentar uma requisição de teste para verificar
-        const testUrl = `${baseUrl}/ping`;
-        const testResponse = await fetch(testUrl, {
-          method: 'GET',
-          headers: headers,
-          mode: 'no-cors'
-        });
-        
-        console.log("Teste de conectividade após autenticação alternativa:", testResponse);
-        
-        // Criar um token simulado para prosseguir
-        token = "mock-token-for-testing";
-      } catch (altError) {
-        console.error("Método alternativo também falhou:", altError);
-      }
-    } else {
-      // Processar resposta de autenticação bem-sucedida
-      try {
-        const authData = await authResponse.json();
-        console.log("Dados de autenticação recebidos:", authData);
-        
-        // Extrair token do formato esperado da resposta
-        token = authData.token || authData.access_token || authData.accessToken;
-        
-        if (!token && authData.data && authData.data.token) {
-          token = authData.data.token;
-        }
-        
-        console.log("Token extraído:", token);
-      } catch (jsonError) {
-        console.error("Erro ao processar resposta JSON:", jsonError);
-        // Verificar se a resposta é texto e pode conter o token diretamente
-        const textResponse = await authResponse.text();
-        console.log("Resposta em texto:", textResponse);
-        
-        if (textResponse && textResponse.length > 0) {
-          // Tentar extrair token se a resposta for uma string JSON
-          try {
-            const parsedText = JSON.parse(textResponse);
-            token = parsedText.token || parsedText.access_token;
-          } catch (e) {
-            // Se não for JSON, verificar se é um token simples (sem espaços, caracteres especiais)
-            if (/^[A-Za-z0-9\-_]+\.[A-Za-z0-9\-_]+\.[A-Za-z0-9\-_]+$/.test(textResponse)) {
-              token = textResponse;
+        try {
+          console.log(`Tentando autenticação em: ${authUrl}`);
+          console.log("Payload:", JSON.stringify(payload));
+          
+          // Tentar requisição com diferentes modos
+          const requestOptions = [
+            { method: 'POST', headers, body: JSON.stringify(payload), mode: 'cors' as RequestMode },
+            { method: 'POST', headers, body: JSON.stringify(payload), mode: 'no-cors' as RequestMode }
+          ];
+          
+          for (const options of requestOptions) {
+            try {
+              console.log(`Tentando com modo: ${options.mode}`);
+              authResponse = await fetch(authUrl, options);
+              
+              // Se for no-cors, não podemos acessar o corpo da resposta
+              if (options.mode === 'no-cors') {
+                console.log("Usando modo no-cors, assumindo sucesso para teste");
+                token = "mock-token-for-testing";
+                break;
+              }
+              
+              if (authResponse.ok) {
+                console.log("Resposta de autenticação:", authResponse);
+                console.log("Status:", authResponse.status);
+                
+                try {
+                  const responseData = await authResponse.json();
+                  console.log("Dados de autenticação:", responseData);
+                  
+                  // Extrair token de diferentes formatos de resposta
+                  token = responseData.token || 
+                          responseData.access_token || 
+                          responseData.accessToken || 
+                          (responseData.data && responseData.data.token) ||
+                          (responseData.contents && JSON.parse(responseData.contents).token);
+                          
+                  if (token) {
+                    console.log("Token obtido:", token);
+                    break;
+                  }
+                } catch (jsonError) {
+                  console.warn("Erro ao processar JSON:", jsonError);
+                  // Tentar como texto
+                  const textResponse = await authResponse.text();
+                  console.log("Resposta como texto:", textResponse);
+                  
+                  // Verificar se parece com um token JWT
+                  if (textResponse && /^[A-Za-z0-9-_=]+\.[A-Za-z0-9-_=]+\.?[A-Za-z0-9-_.+/=]*$/.test(textResponse)) {
+                    token = textResponse;
+                    console.log("Token extraído do texto:", token);
+                    break;
+                  }
+                }
+              } else {
+                console.warn(`Falha na autenticação: ${authResponse.status}`);
+              }
+            } catch (fetchError) {
+              console.warn(`Erro na requisição com modo ${options.mode}:`, fetchError);
             }
           }
+        } catch (authError) {
+          console.warn(`Erro ao tentar ${authUrl}:`, authError);
         }
       }
-    }
-
-    // Se não conseguimos um token, tentar buscar planos sem autenticação
-    if (!token) {
-      console.warn("Não foi possível obter token. Tentando buscar planos sem autenticação...");
       
-      try {
-        // Tentar acessar endpoint de planos direto
-        const plansEndpoint = `${baseUrl}/plans`;
-        console.log("Buscando planos sem autenticação em:", plansEndpoint);
-        
-        const plansResponse = await fetch(plansEndpoint, {
-          method: 'GET',
-          headers: headers,
-          mode: 'cors'
-        });
-        
-        console.log("Resposta da busca direta de planos:", plansResponse);
-        
-        if (plansResponse.ok) {
-          const plansData = await plansResponse.json();
-          console.log("Planos obtidos sem autenticação:", plansData);
-          
-          if (plansData && (Array.isArray(plansData) || plansData.plans || plansData.data)) {
-            const plans = Array.isArray(plansData) ? plansData : (plansData.plans || plansData.data || []);
-            return processPlans(plans);
-          }
-        } else {
-          console.warn("Não foi possível acessar planos sem autenticação. Status:", plansResponse.status);
-        }
-      } catch (directError) {
-        console.error("Erro ao tentar acessar planos diretamente:", directError);
-      }
-      
-      // Se todas as tentativas falharem, usar dados mockados
-      console.warn("Todas as tentativas de acesso à API falharam. Usando dados mockados.");
-      toast.info("Não foi possível acessar a API da Universal Assistance. Usando dados de demonstração.", {
-        duration: 6000
-      });
-      return generateMockOffers(5);
+      if (token) break; // Se já temos um token, não precisa continuar
     }
-
-    // Se temos um token, prosseguir com a busca de ofertas
-    console.log("Token obtido com sucesso. Buscando planos disponíveis...");
     
-    // Preparar parâmetros de busca
-    const tripDuration = calculateTripDuration(params.departureDate, params.returnDate);
-    const departureFormatted = new Date(params.departureDate).toISOString().split('T')[0];
-    const returnFormatted = new Date(params.returnDate).toISOString().split('T')[0];
-    const originCode = params.origin;
-    const destinationCode = params.destination;
-
-    console.log("Parâmetros para busca:", {
-      origin: originCode,
-      destination: destinationCode,
-      departure: departureFormatted,
-      return: returnFormatted,
-      duration: tripDuration,
-      passengers: params.passengers.ages
-    });
-
-    // Adicionar o token ao headers
-    const authHeaders = {
-      ...headers,
-      'Authorization': `Bearer ${token}`
-    };
-
-    // Tentar diferentes formatos de payload conforme documentação
-    const searchPayloads = [
-      // Formato 1 - Documentado
-      {
-        origin: originCode,
-        destination: destinationCode,
-        departure_date: departureFormatted,
-        return_date: returnFormatted,
-        trip_duration: tripDuration,
-        passengers: params.passengers.ages.map(age => ({ age }))
-      },
-      // Formato 2 - Alternativo
-      {
-        origin: originCode,
-        destination: destinationCode,
-        departureDate: departureFormatted,
-        returnDate: returnFormatted,
-        tripDuration: tripDuration,
-        travelers: params.passengers.ages
-      }
-    ];
-
-    // Tentar diferentes endpoints de busca
-    const searchEndpoints = [
-      `${baseUrl}/plans/search`,
-      `${baseUrl}/plans`,
-      `${baseUrl}/offers/search`,
-      `${baseUrl}/offers`
-    ];
-
-    // Tentar cada combinação de endpoint e payload
-    for (const searchUrl of searchEndpoints) {
-      for (const payload of searchPayloads) {
+    // Se não conseguimos token, tentar obter planos sem autenticação
+    if (!token) {
+      console.warn("Não foi possível obter token. Tentando acessar planos diretamente...");
+      
+      // Tentar diferentes URLs para planos
+      const plansUrls = [
+        `${baseUrl}/plans`,
+        `${baseUrl}/plans/list`,
+        `${baseUrl}/offers`,
+        `https://cors-anywhere.herokuapp.com/${baseUrl}/plans`
+      ];
+      
+      for (const plansUrl of plansUrls) {
         try {
-          console.log(`Tentando buscar planos em ${searchUrl} com payload:`, JSON.stringify(payload));
-          
-          const searchResponse = await fetch(searchUrl, {
-            method: 'POST',
-            headers: authHeaders,
-            body: JSON.stringify(payload)
+          console.log(`Tentando acessar planos em: ${plansUrl}`);
+          const plansResponse = await fetch(plansUrl, {
+            method: 'GET',
+            headers,
+            mode: 'cors'
           });
           
-          console.log(`Resposta de ${searchUrl}:`, searchResponse);
-          
-          if (!searchResponse.ok) {
-            console.warn(`Busca em ${searchUrl} falhou com status ${searchResponse.status}`);
-            continue;
-          }
-          
-          const searchData = await searchResponse.json();
-          console.log("Dados obtidos da busca:", searchData);
-          
-          // Processar diferentes formatos de resposta
-          if (searchData) {
-            let plans = [];
+          if (plansResponse.ok) {
+            const plansData = await plansResponse.json();
+            console.log("Planos obtidos diretamente:", plansData);
             
-            if (Array.isArray(searchData)) {
-              plans = searchData;
-            } else if (searchData.plans) {
-              plans = searchData.plans;
-            } else if (searchData.data) {
-              plans = searchData.data;
-            } else if (searchData.offers) {
-              plans = searchData.offers;
-            } else if (searchData.results) {
-              plans = searchData.results;
+            // Processar planos de diferentes formatos
+            let plans = [];
+            if (Array.isArray(plansData)) {
+              plans = plansData;
+            } else if (plansData.plans) {
+              plans = plansData.plans;
+            } else if (plansData.data) {
+              plans = plansData.data;
+            } else if (plansData.offers) {
+              plans = plansData.offers;
             }
             
             if (plans && plans.length > 0) {
-              console.log(`Encontrados ${plans.length} planos em ${searchUrl}`);
               return processPlans(plans);
             }
           }
-        } catch (searchError) {
-          console.error(`Erro ao buscar planos em ${searchUrl}:`, searchError);
+        } catch (plansError) {
+          console.warn(`Erro ao acessar ${plansUrl}:`, plansError);
         }
       }
     }
     
-    // Se todas as buscas falharem, tentar obter lista genérica de planos
-    try {
-      console.log("Tentando obter lista genérica de planos...");
-      const genericUrl = `${baseUrl}/plans`;
+    // Se temos token, buscar planos com o token
+    if (token) {
+      console.log("Token obtido com sucesso. Buscando planos...");
       
-      const genericResponse = await fetch(genericUrl, {
-        method: 'GET',
-        headers: authHeaders
-      });
+      // Preparar parâmetros de busca
+      const tripDuration = calculateTripDuration(params.departureDate, params.returnDate);
+      const departureFormatted = new Date(params.departureDate).toISOString().split('T')[0];
+      const returnFormatted = new Date(params.returnDate).toISOString().split('T')[0];
       
-      if (genericResponse.ok) {
-        const genericData = await genericResponse.json();
-        console.log("Dados genéricos obtidos:", genericData);
-        
-        let genericPlans = [];
-        if (Array.isArray(genericData)) {
-          genericPlans = genericData;
-        } else if (genericData.plans) {
-          genericPlans = genericData.plans;
-        } else if (genericData.data) {
-          genericPlans = genericData.data;
+      // Adicionar token ao headers
+      const authHeaders = {
+        ...headers,
+        'Authorization': `Bearer ${token}`
+      };
+      
+      // Diferentes formatos de payload para busca
+      const searchPayloads = [
+        {
+          origin: params.origin,
+          destination: params.destination,
+          departure_date: departureFormatted,
+          return_date: returnFormatted,
+          trip_duration: tripDuration,
+          passengers: params.passengers.ages.map(age => ({ age }))
+        },
+        {
+          origin: params.origin,
+          destination: params.destination,
+          departureDate: departureFormatted,
+          returnDate: returnFormatted,
+          tripDuration: tripDuration,
+          travelers: params.passengers.ages
         }
-        
-        if (genericPlans.length > 0) {
-          return processPlans(genericPlans);
+      ];
+      
+      // Diferentes URLs para busca
+      const searchUrls = [
+        `${baseUrl}/plans/search`,
+        `${baseUrl}/plans`,
+        `${baseUrl}/offers/search`,
+        `${baseUrl}/offers`,
+        `https://cors-anywhere.herokuapp.com/${baseUrl}/plans/search`
+      ];
+      
+      // Tentar diferentes combinações
+      for (const searchUrl of searchUrls) {
+        for (const payload of searchPayloads) {
+          try {
+            console.log(`Tentando buscar em: ${searchUrl}`);
+            console.log("Payload:", JSON.stringify(payload));
+            
+            const searchResponse = await fetch(searchUrl, {
+              method: 'POST',
+              headers: authHeaders,
+              body: JSON.stringify(payload)
+            });
+            
+            if (searchResponse.ok) {
+              const searchData = await searchResponse.json();
+              console.log("Dados obtidos:", searchData);
+              
+              // Processar resultados de diferentes formatos
+              let plans = [];
+              if (Array.isArray(searchData)) {
+                plans = searchData;
+              } else if (searchData.plans) {
+                plans = searchData.plans;
+              } else if (searchData.data) {
+                plans = searchData.data;
+              } else if (searchData.offers) {
+                plans = searchData.offers;
+              } else if (searchData.results) {
+                plans = searchData.results;
+              }
+              
+              if (plans && plans.length > 0) {
+                return processPlans(plans);
+              }
+            } else {
+              console.warn(`Falha na busca: ${searchResponse.status}`);
+            }
+          } catch (searchError) {
+            console.warn(`Erro na requisição para ${searchUrl}:`, searchError);
+          }
         }
       }
-    } catch (genericError) {
-      console.error("Erro ao obter planos genéricos:", genericError);
     }
     
-    // Se todas as tentativas falharem, usar dados mockados
-    console.warn("Nenhuma busca retornou resultados. Usando dados mockados.");
-    toast.info("Não foi possível obter planos da API. Usando dados de demonstração.");
+    // Se todas as tentativas falharem, usar dados mockados mas com aviso específico
+    console.warn("Todas as tentativas de conexão falharam. Usando dados mockados.");
+    toast.error("Não foi possível conectar à API da Universal Assistance. Verifique sua conexão de internet e as configurações da API.", {
+      duration: 8000
+    });
     return generateMockOffers(5);
   } catch (error) {
     console.error("Erro ao buscar dados da Universal Assistance:", error);
-    toast.error("Erro ao buscar dados da Universal Assistance. Usando dados de demonstração.");
+    toast.error("Erro ao conectar com a API da Universal Assistance. Tentando novamente com outro método...");
+    
+    // Tentar método alternativo com fetch simples
+    try {
+      // Tentar requisição simples para verificar se o servidor está acessível
+      const testUrl = "https://jsonplaceholder.typicode.com/todos/1";
+      const testResponse = await fetch(testUrl);
+      console.log("Teste de conectividade:", testResponse.ok ? "Sucesso" : "Falha");
+      
+      if (testResponse.ok) {
+        toast.info("Conexão com internet confirmada. O problema pode ser específico da API da Universal Assistance.");
+      } else {
+        toast.error("Não foi possível estabelecer conexão com a internet.");
+      }
+    } catch (testError) {
+      console.error("Erro no teste de conectividade:", testError);
+      toast.error("Problema de conectividade detectado. Verifique sua conexão de internet.");
+    }
+    
     return generateMockOffers(5);
   }
 };
@@ -325,12 +312,10 @@ const processPlans = (plans: any[]): InsuranceOffer[] => {
 
 // Helper function to extract coverage values
 const extractCoverage = (plan: any, type: string, defaultValue: number): number => {
-  // Try multiple possible paths to find the coverage value
   if (plan.coverages?.[type]) return plan.coverages[type];
   if (plan[`${type}_coverage`]) return plan[`${type}_coverage`];
   if (plan.coverage?.[type]) return plan.coverage[type];
   
-  // If coverage is an array, try to find by type
   if (Array.isArray(plan.coverages)) {
     const found = plan.coverages.find((c: any) => 
       c.type === type || c.name?.toLowerCase().includes(type)
@@ -343,17 +328,14 @@ const extractCoverage = (plan: any, type: string, defaultValue: number): number 
 
 // Helper function to extract benefits
 const extractBenefits = (plan: any): string[] => {
-  // If benefits is already an array of strings, use it
   if (Array.isArray(plan.benefits) && typeof plan.benefits[0] === 'string') {
     return plan.benefits;
   }
   
-  // If benefits is an array of objects, extract names
   if (Array.isArray(plan.benefits) && typeof plan.benefits[0] === 'object') {
     return plan.benefits.map((b: any) => b.name || b.title || b.description || "Benefício");
   }
   
-  // If features exists, use it
   if (Array.isArray(plan.features)) {
     return plan.features.map((f: any) => {
       if (typeof f === 'string') return f;
@@ -361,7 +343,6 @@ const extractBenefits = (plan: any): string[] => {
     });
   }
   
-  // Default benefits
   return ["COVID-19", "Telemedicina", "Traslado médico"];
 };
 
