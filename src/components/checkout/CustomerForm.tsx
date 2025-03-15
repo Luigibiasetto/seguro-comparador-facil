@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -15,11 +15,8 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { CustomerInfo } from "@/services/api/types";
-import { format } from "date-fns";
-import { CalendarIcon } from "lucide-react";
 import { Button } from "../ui/button";
-import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
-import { Calendar } from "../ui/calendar";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { 
   Select,
@@ -35,14 +32,16 @@ interface CustomerFormProps {
 }
 
 const CustomerForm: React.FC<CustomerFormProps> = ({ isBrazilianOrigin, onSubmit }) => {
+  const [isLoadingCep, setIsLoadingCep] = useState(false);
+  
   // Schema for form validation
   const formSchema = z.object({
     documentType: z.enum(["cpf", "passport"]),
     documentNumber: z.string().min(1, "Número do documento é obrigatório"),
     fullName: z.string().min(3, "Nome completo deve ter pelo menos 3 caracteres"),
-    birthDate: z.date({
-      required_error: "Data de nascimento é obrigatória",
-    }),
+    birthDate: z.string()
+      .min(1, "Data de nascimento é obrigatória")
+      .regex(/^\d{2}\/\d{2}\/\d{4}$/, "Data deve estar no formato DD/MM/AAAA"),
     email: z.string().email("E-mail inválido"),
     phone: z.string().min(8, "Telefone inválido"),
     emergencyContact: z.object({
@@ -50,12 +49,12 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ isBrazilianOrigin, onSubmit
       phone: z.string().min(8, "Telefone inválido"),
     }),
     address: z.object({
+      zipCode: z.string().min(8, "CEP é obrigatório"),
       street: z.string().min(1, "Rua é obrigatória"),
       number: z.string().min(1, "Número é obrigatório"),
       complement: z.string().optional(),
       city: z.string().min(1, "Cidade é obrigatória"),
       state: z.string().min(1, "Estado é obrigatório"),
-      zipCode: z.string().min(1, "CEP é obrigatório"),
       country: z.string().min(1, "País é obrigatório"),
     }),
     acceptTerms: z.boolean().refine(val => val === true, {
@@ -70,6 +69,7 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ isBrazilianOrigin, onSubmit
       documentType: "cpf", // Always set CPF as default
       documentNumber: "",
       fullName: "",
+      birthDate: "",
       email: "",
       phone: "",
       emergencyContact: {
@@ -77,12 +77,12 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ isBrazilianOrigin, onSubmit
         phone: "",
       },
       address: {
+        zipCode: "",
         street: "",
         number: "",
         complement: "",
         city: "",
         state: "",
-        zipCode: "",
         country: isBrazilianOrigin ? "Brasil" : "",
       },
       acceptTerms: false,
@@ -93,13 +93,52 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ isBrazilianOrigin, onSubmit
     // Remove the acceptTerms field before submitting
     const { acceptTerms, ...customerData } = values;
     
-    // Format the birth date to string
+    // Convert birthDate from DD/MM/YYYY to YYYY-MM-DD for API
+    const [day, month, year] = values.birthDate.split('/');
+    const formattedBirthDate = `${year}-${month}-${day}`;
+    
     const formattedData = {
       ...customerData,
-      birthDate: format(values.birthDate, "yyyy-MM-dd"),
+      birthDate: formattedBirthDate,
     };
     
     onSubmit(formattedData as CustomerInfo);
+  };
+
+  const fetchAddressByCep = async (cep: string) => {
+    // Skip if CEP is not complete yet
+    const cleanCep = cep.replace(/\D/g, '');
+    if (cleanCep.length !== 8) return;
+
+    try {
+      setIsLoadingCep(true);
+      const response = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`);
+      const data = await response.json();
+      
+      if (data.erro) {
+        toast.error("CEP não encontrado");
+        return;
+      }
+      
+      // Update form with address data
+      form.setValue('address.street', data.logradouro);
+      form.setValue('address.city', data.localidade);
+      form.setValue('address.state', data.uf);
+      form.setValue('address.complement', data.complemento || '');
+      
+      // Focus on the number field after filling the address
+      setTimeout(() => {
+        const numberInput = document.querySelector('[name="address.number"]') as HTMLInputElement;
+        if (numberInput) numberInput.focus();
+      }, 100);
+      
+      toast.success("Endereço preenchido automaticamente");
+    } catch (error) {
+      toast.error("Erro ao buscar CEP");
+      console.error("Error fetching address by CEP:", error);
+    } finally {
+      setIsLoadingCep(false);
+    }
   };
 
   return (
@@ -161,45 +200,19 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ isBrazilianOrigin, onSubmit
               )}
             />
 
-            {/* Birth Date */}
+            {/* Birth Date (text input) */}
             <FormField
               control={form.control}
               name="birthDate"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Data de Nascimento</FormLabel>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <FormControl>
-                        <Button
-                          variant={"outline"}
-                          className={cn(
-                            "w-full pl-3 text-left font-normal",
-                            !field.value && "text-muted-foreground"
-                          )}
-                        >
-                          {field.value ? (
-                            format(field.value, "dd/MM/yyyy")
-                          ) : (
-                            <span>Selecione uma data</span>
-                          )}
-                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                        </Button>
-                      </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={field.value}
-                        onSelect={field.onChange}
-                        disabled={(date) =>
-                          date > new Date() || date < new Date("1900-01-01")
-                        }
-                        initialFocus
-                        className={cn("p-3 pointer-events-auto")}
-                      />
-                    </PopoverContent>
-                  </Popover>
+                  <FormControl>
+                    <Input 
+                      placeholder="DD/MM/AAAA" 
+                      {...field} 
+                    />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
@@ -274,6 +287,29 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ isBrazilianOrigin, onSubmit
           <div className="pt-4 border-t border-border">
             <h3 className="text-lg font-medium mb-4">Endereço</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* CEP (moved to first position) */}
+              <FormField
+                control={form.control}
+                name="address.zipCode"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>CEP</FormLabel>
+                    <FormControl>
+                      <Input 
+                        placeholder="Digite o CEP" 
+                        {...field} 
+                        onChange={(e) => {
+                          field.onChange(e);
+                          fetchAddressByCep(e.target.value);
+                        }}
+                        disabled={isLoadingCep}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
               <FormField
                 control={form.control}
                 name="address.street"
@@ -281,7 +317,11 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ isBrazilianOrigin, onSubmit
                   <FormItem className="col-span-1 md:col-span-2">
                     <FormLabel>Rua</FormLabel>
                     <FormControl>
-                      <Input placeholder="Digite o nome da rua" {...field} />
+                      <Input 
+                        placeholder="Digite o nome da rua" 
+                        {...field} 
+                        disabled={isLoadingCep}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -295,7 +335,10 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ isBrazilianOrigin, onSubmit
                   <FormItem>
                     <FormLabel>Número</FormLabel>
                     <FormControl>
-                      <Input placeholder="Digite o número" {...field} />
+                      <Input 
+                        placeholder="Digite o número" 
+                        {...field} 
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -309,7 +352,10 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ isBrazilianOrigin, onSubmit
                   <FormItem>
                     <FormLabel>Complemento</FormLabel>
                     <FormControl>
-                      <Input placeholder="Apartamento, bloco, etc." {...field} />
+                      <Input 
+                        placeholder="Apartamento, bloco, etc." 
+                        {...field} 
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -323,7 +369,11 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ isBrazilianOrigin, onSubmit
                   <FormItem>
                     <FormLabel>Cidade</FormLabel>
                     <FormControl>
-                      <Input placeholder="Digite a cidade" {...field} />
+                      <Input 
+                        placeholder="Digite a cidade" 
+                        {...field} 
+                        disabled={isLoadingCep}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -337,21 +387,11 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ isBrazilianOrigin, onSubmit
                   <FormItem>
                     <FormLabel>Estado</FormLabel>
                     <FormControl>
-                      <Input placeholder="Digite o estado" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="address.zipCode"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>CEP</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Digite o CEP" {...field} />
+                      <Input 
+                        placeholder="Digite o estado" 
+                        {...field} 
+                        disabled={isLoadingCep}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
