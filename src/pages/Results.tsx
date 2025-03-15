@@ -17,6 +17,7 @@ import ApiConfigModal from "@/components/ApiConfigModal";
 import SearchSummary from "@/components/results/SearchSummary";
 import ResultsFilters from "@/components/results/ResultsFilters";
 import ResultsList from "@/components/results/ResultsList";
+import { secureStore } from "@/services/security/dataSecurity";
 
 type SortType = "price" | "coverage"; // Removed rating
 type SortDirection = "asc" | "desc";
@@ -80,6 +81,9 @@ const Results = () => {
         setProviders(providersData);
         setOffers(offersData);
         setFilteredOffers(offersData);
+        
+        // Store search params for checkout
+        secureStore('searchParams', parsedParams);
         
         setFilters({
           providers: [],
@@ -223,6 +227,7 @@ const Results = () => {
               totalPages={totalPages}
               setCurrentPage={setCurrentPage}
               itemsPerPage={itemsPerPage}
+              searchParams={parsedParams}
             />
           </div>
         </div>

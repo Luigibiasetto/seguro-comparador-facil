@@ -35,6 +35,42 @@ export interface SearchParams {
   phone?: string;
 }
 
+export interface CustomerInfo {
+  documentType: 'cpf' | 'passport';
+  documentNumber: string;
+  fullName: string;
+  birthDate: string;
+  email: string;
+  phone: string;
+  emergencyContact: {
+    name: string;
+    phone: string;
+  };
+  address: {
+    street: string;
+    number: string;
+    complement?: string;
+    city: string;
+    state: string;
+    zipCode: string;
+    country: string;
+  };
+}
+
+export interface CheckoutData {
+  offer: InsuranceOffer;
+  provider: InsuranceProvider;
+  search: SearchParams;
+  customer: CustomerInfo;
+  paymentMethod: 'pix' | 'creditCard';
+  creditCardInfo?: {
+    number: string;
+    name: string;
+    expiry: string;
+    cvv: string;
+  };
+}
+
 // API configuration
 export interface ApiConfig {
   baseUrl: string;

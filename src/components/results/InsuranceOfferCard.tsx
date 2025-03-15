@@ -1,42 +1,39 @@
 
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
-import { Check, ChevronDown, ChevronUp, Star } from "lucide-react";
+import { Check, ChevronDown, ChevronUp } from "lucide-react";
+import { secureStore } from "@/services/security/dataSecurity";
 import { InsuranceOffer, InsuranceProvider } from "@/services/insuranceApi";
 
 interface InsuranceOfferCardProps {
   offer: InsuranceOffer;
   providers: InsuranceProvider[];
   formatPrice: (price: number) => string;
+  searchParams?: any;
 }
 
 const InsuranceOfferCard = ({
   offer,
   providers,
-  formatPrice
+  formatPrice,
+  searchParams
 }: InsuranceOfferCardProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
-
-  const renderRating = (rating: number) => {
-    const fullStars = Math.floor(rating);
-    const hasHalfStar = rating - fullStars >= 0.5;
+  const navigate = useNavigate();
+  
+  const handleBuy = () => {
+    // Store selected offer and search parameters in localStorage
+    secureStore('selectedOffer', offer);
+    secureStore('selectedProvider', providers.find(p => p.id === offer.providerId));
+    if (searchParams) {
+      secureStore('searchParams', searchParams);
+    }
     
-    return (
-      <div className="flex items-center">
-        {Array.from({ length: fullStars }).map((_, i) => (
-          <Star key={`full-${i}`} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-        ))}
-        {hasHalfStar && (
-          <Star className="w-4 h-4 text-yellow-400" />
-        )}
-        {Array.from({ length: 5 - fullStars - (hasHalfStar ? 1 : 0) }).map((_, i) => (
-          <Star key={`empty-${i}`} className="w-4 h-4 text-gray-300" />
-        ))}
-        <span className="ml-1 text-sm text-gray-600">{rating.toFixed(1)}</span>
-      </div>
-    );
+    // Navigate to checkout page
+    navigate('/checkout');
   };
 
   return (
@@ -49,7 +46,6 @@ const InsuranceOfferCard = ({
                 <h3 className="text-lg font-bold">
                   {providers.find(p => p.id === offer.providerId)?.name || "Seguradora"}
                 </h3>
-                {renderRating(offer.rating)}
               </div>
               <div className="text-muted-foreground text-sm mb-2">
                 {offer.name}
@@ -75,7 +71,7 @@ const InsuranceOfferCard = ({
               <div className="text-sm text-muted-foreground mb-2">
                 Cobertura médica: {formatPrice(offer.coverage.medical)}
               </div>
-              <Button>Contratar</Button>
+              <Button onClick={handleBuy}>Contratar</Button>
             </div>
           </div>
           
