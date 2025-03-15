@@ -16,6 +16,13 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { CreditCard, QrCode } from 'lucide-react';
 import { InsuranceOffer } from '@/services/api/types';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface PaymentFormProps {
   offer: InsuranceOffer;
@@ -25,6 +32,7 @@ interface PaymentFormProps {
 
 const PaymentForm: React.FC<PaymentFormProps> = ({ offer, formatPrice, onSubmit }) => {
   const [paymentMethod, setPaymentMethod] = React.useState<'pix' | 'creditCard'>('pix');
+  const [installments, setInstallments] = React.useState<number>(1);
 
   // Schema for credit card validation
   const creditCardSchema = z.object({
@@ -47,10 +55,16 @@ const PaymentForm: React.FC<PaymentFormProps> = ({ offer, formatPrice, onSubmit 
 
   const handleSubmit = (values: z.infer<typeof creditCardSchema>) => {
     if (paymentMethod === 'creditCard') {
-      onSubmit('creditCard', values);
+      onSubmit('creditCard', { ...values, installments });
     } else {
       onSubmit('pix');
     }
+  };
+
+  // Calculate installment amount
+  const calculateInstallmentAmount = (installmentCount: number) => {
+    if (installmentCount <= 0) return offer.price;
+    return offer.price / installmentCount;
   };
 
   return (
@@ -154,6 +168,22 @@ const PaymentForm: React.FC<PaymentFormProps> = ({ offer, formatPrice, onSubmit 
                   </FormItem>
                 )}
               />
+            </div>
+
+            <div className="pt-2">
+              <FormLabel>Parcelamento sem juros</FormLabel>
+              <Select value={installments.toString()} onValueChange={(value) => setInstallments(parseInt(value))}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Selecione o número de parcelas" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Array.from({ length: 12 }, (_, i) => i + 1).map((num) => (
+                    <SelectItem key={num} value={num.toString()}>
+                      {num}x de {formatPrice(calculateInstallmentAmount(num))} sem juros
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="pt-4">
