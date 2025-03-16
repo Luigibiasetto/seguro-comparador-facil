@@ -22,8 +22,10 @@ export function Toaster() {
           cancelButton:
             "group-[.toast]:bg-muted group-[.toast]:text-muted-foreground",
         },
-        duration: 6000,
+        duration: 8000, // Aumentado para 8 segundos para melhor visibilidade
       }}
+      expand
+      visibleToasts={3}
     />
   );
 }

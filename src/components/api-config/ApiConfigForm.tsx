@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { DialogClose, DialogFooter } from "@/components/ui/dialog";
-import { Check } from "lucide-react";
+import { Check, Bug } from "lucide-react";
 import { toast } from "sonner";
 import { configureInsuranceAPI } from "@/services/api/config";
 import UniversalAssistanceForm from "./UniversalAssistanceForm";
@@ -21,6 +21,99 @@ const ApiConfigForm = ({ onOpenChange }: ApiConfigFormProps) => {
   const [apiKey, setApiKey] = useState("");
   const [useProxy, setUseProxy] = useState(true);
   const [proxyUrl, setProxyUrl] = useState("https://corsproxy.io/?");
+  const [debugMode, setDebugMode] = useState(false);
+  
+  const testConnection = async () => {
+    try {
+      toast.info("Testando conexão com a API...", {
+        id: "api-test",
+      });
+      
+      const testHeaders = {
+        'Origin': window.location.origin,
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest'
+      };
+      
+      // Teste de conectividade genérica
+      const testUrl = "https://jsonplaceholder.typicode.com/todos/1";
+      const testResponse = await fetch(testUrl);
+      
+      if (!testResponse.ok) {
+        toast.error("Falha no teste de conectividade básica. Verifique sua conexão com a internet.", {
+          id: "api-test",
+        });
+        return;
+      }
+      
+      // Formatando a URL para o teste
+      let apiTestUrl = baseUrl;
+      if (!apiTestUrl.endsWith('/')) apiTestUrl += '/';
+      
+      // Se usar proxy, adicione-o
+      if (useProxy) {
+        apiTestUrl = `${proxyUrl}${encodeURIComponent(apiTestUrl)}`;
+      }
+      
+      toast.info(`Testando: ${apiTestUrl}`, {
+        id: "api-test",
+        duration: 5000,
+      });
+      
+      // Tente acessar a API (sem autenticação, apenas para testar alcançabilidade)
+      try {
+        const apiResponse = await fetch(apiTestUrl, {
+          method: 'GET',
+          headers: testHeaders,
+          mode: 'cors'
+        });
+        
+        const status = apiResponse.status;
+        
+        if (status === 200 || status === 401 || status === 403) {
+          // Códigos 401/403 são OK para esse teste, significa que a API está acessível mas requer auth
+          toast.success(`Conexão com API estabelecida! Status: ${status}`, {
+            id: "api-test",
+            description: "A API está acessível. Códigos 401/403 são esperados se autenticação for necessária."
+          });
+        } else {
+          toast.warning(`API respondeu com status: ${status}`, {
+            id: "api-test",
+            description: "A API foi contactada, mas retornou um status inesperado."
+          });
+        }
+        
+        // Tente obter mais informações sobre o erro
+        try {
+          const responseText = await apiResponse.text();
+          console.log("Resposta da API:", responseText);
+          
+          if (debugMode) {
+            toast.info("Resposta detalhada da API (modo debug)", {
+              description: responseText.substring(0, 200) + (responseText.length > 200 ? "..." : ""),
+              duration: 10000
+            });
+          }
+        } catch (textError) {
+          console.error("Erro ao obter texto da resposta:", textError);
+        }
+        
+      } catch (apiError) {
+        console.error("Erro ao conectar com a API:", apiError);
+        toast.error("Falha ao conectar com a API", {
+          id: "api-test",
+          description: `Erro: ${apiError instanceof Error ? apiError.message : "Desconhecido"}` 
+        });
+      }
+    } catch (error) {
+      console.error("Erro no teste de conexão:", error);
+      toast.error("Erro ao testar conexão", { 
+        id: "api-test",
+        description: error instanceof Error ? error.message : "Erro desconhecido"
+      });
+    }
+  };
   
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,6 +125,7 @@ const ApiConfigForm = ({ onOpenChange }: ApiConfigFormProps) => {
         provider: apiProvider,
         useProxy,
         proxyUrl: useProxy ? proxyUrl : undefined,
+        debugMode,
         fallbackProxies: [
           "https://corsproxy.io/?",
           "https://cors-proxy.htmldriven.com/?url=",
@@ -58,7 +152,11 @@ const ApiConfigForm = ({ onOpenChange }: ApiConfigFormProps) => {
         config.headers = {
           'Origin': window.location.origin,
           'Accept': 'application/json',
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
+          'Access-Control-Allow-Origin': '*',
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
         };
       } else if (apiProvider === "custom") {
         // Verificar URL base para API personalizada
@@ -105,6 +203,8 @@ const ApiConfigForm = ({ onOpenChange }: ApiConfigFormProps) => {
             setUseProxy={setUseProxy}
             proxyUrl={proxyUrl}
             setProxyUrl={setProxyUrl}
+            debugMode={debugMode}
+            setDebugMode={setDebugMode}
           />
         </div>
       ) : (
@@ -119,6 +219,18 @@ const ApiConfigForm = ({ onOpenChange }: ApiConfigFormProps) => {
           />
         </div>
       )}
+
+      <div className="flex justify-between items-center pt-2">
+        <Button 
+          type="button" 
+          variant="outline" 
+          onClick={testConnection}
+          className="gap-1"
+        >
+          <Bug className="w-4 h-4" />
+          Testar Conexão
+        </Button>
+      </div>
 
       <DialogFooter>
         <DialogClose asChild>

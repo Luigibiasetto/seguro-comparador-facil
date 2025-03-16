@@ -8,11 +8,13 @@ let apiConfig: ApiConfig = {
   provider: "universal-assist",
   useProxy: true, // Added proxy support
   proxyUrl: "https://corsproxy.io/?", // Default CORS proxy
+  debugMode: false,
   fallbackProxies: [
     "https://corsproxy.io/?",
     "https://cors-proxy.htmldriven.com/?url=",
     "https://cors.bridged.cc/",
-    "https://proxy.cors.sh/"
+    "https://proxy.cors.sh/",
+    "https://api.allorigins.win/raw?url="
   ],
   providerSettings: {
     username: "raphaelbellei",
@@ -23,7 +25,9 @@ let apiConfig: ApiConfig = {
     'Accept': 'application/json',
     'Content-Type': 'application/json',
     'X-Requested-With': 'XMLHttpRequest',
-    'Access-Control-Allow-Origin': '*'
+    'Access-Control-Allow-Origin': '*',
+    'Cache-Control': 'no-cache',
+    'Pragma': 'no-cache'
   }
 };
 
@@ -47,10 +51,23 @@ export const configureInsuranceAPI = (config: Partial<ApiConfig>) => {
     'Origin': window.location.origin,
     'Accept': 'application/json',
     'Content-Type': 'application/json',
-    'X-Requested-With': 'XMLHttpRequest'
+    'X-Requested-With': 'XMLHttpRequest',
+    'Access-Control-Allow-Origin': '*',
+    'Cache-Control': 'no-cache',
+    'Pragma': 'no-cache'
   };
   
   console.log("API configurada:", apiConfig);
+  
+  if (apiConfig.debugMode) {
+    console.log("Origem atual:", window.location.origin);
+    console.log("API base URL:", apiConfig.baseUrl);
+    console.log("Usando proxy:", apiConfig.useProxy ? "Sim" : "Não");
+    if (apiConfig.useProxy) {
+      console.log("URL do proxy:", apiConfig.proxyUrl);
+    }
+  }
+  
   return apiConfig;
 };
 
@@ -68,7 +85,18 @@ export const getApiUrl = (endpoint: string, proxyOverride?: string): string => {
   if (config.useProxy) {
     // Use specified proxy or default
     const proxyUrl = proxyOverride || config.proxyUrl;
-    return `${proxyUrl}${encodeURIComponent(fullUrl)}`;
+    const encodedUrl = encodeURIComponent(fullUrl);
+    const finalUrl = `${proxyUrl}${encodedUrl}`;
+    
+    if (config.debugMode) {
+      console.log(`URL com proxy: ${finalUrl}`);
+    }
+    
+    return finalUrl;
+  }
+  
+  if (config.debugMode) {
+    console.log(`URL direta: ${fullUrl}`);
   }
   
   return fullUrl;
@@ -87,18 +115,26 @@ export const tryWithMultipleProxies = async <T>(
   
   // First try with the configured proxy
   try {
-    return await fetchFunction(config.proxyUrl);
+    const result = await fetchFunction(config.proxyUrl);
+    if (config.debugMode) {
+      console.log(`Conexão bem-sucedida com proxy primário: ${config.proxyUrl}`);
+    }
+    return result;
   } catch (error) {
     console.warn(`Falha ao usar proxy primário ${config.proxyUrl}:`, error);
     
     // Try each fallback proxy
     if (config.fallbackProxies && config.fallbackProxies.length > 0) {
-      for (const proxy of config.fallbackProxies) {
+      const uniqueProxies = [...new Set([...config.fallbackProxies, "https://api.allorigins.win/raw?url="])];
+      
+      for (const proxy of uniqueProxies) {
         if (proxy === config.proxyUrl) continue; // Skip if it's the same as the primary
         
         try {
           console.log(`Tentando proxy alternativo: ${proxy}`);
-          return await fetchFunction(proxy);
+          const result = await fetchFunction(proxy);
+          console.log(`Conexão bem-sucedida com proxy alternativo: ${proxy}`);
+          return result;
         } catch (proxyError) {
           console.warn(`Falha ao usar proxy alternativo ${proxy}:`, proxyError);
         }

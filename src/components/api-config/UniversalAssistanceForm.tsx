@@ -17,6 +17,8 @@ interface UniversalAssistanceFormProps {
   setUseProxy: (value: boolean) => void;
   proxyUrl: string;
   setProxyUrl: (value: string) => void;
+  debugMode: boolean;
+  setDebugMode: (value: boolean) => void;
 }
 
 const PROXY_OPTIONS = [
@@ -24,6 +26,7 @@ const PROXY_OPTIONS = [
   { value: "https://cors-proxy.htmldriven.com/?url=", label: "htmldriven.com" },
   { value: "https://cors.bridged.cc/", label: "bridged.cc" },
   { value: "https://proxy.cors.sh/", label: "cors.sh" },
+  { value: "https://api.allorigins.win/raw?url=", label: "allorigins.win" },
 ];
 
 const UniversalAssistanceForm = ({ 
@@ -36,7 +39,9 @@ const UniversalAssistanceForm = ({
   useProxy,
   setUseProxy,
   proxyUrl,
-  setProxyUrl
+  setProxyUrl,
+  debugMode,
+  setDebugMode
 }: UniversalAssistanceFormProps) => {
   return (
     <>
@@ -127,6 +132,16 @@ const UniversalAssistanceForm = ({
         </div>
       )}
       
+      <div className="flex items-center space-x-2 mt-4">
+        <Switch 
+          id="debugMode" 
+          checked={debugMode}
+          onCheckedChange={setDebugMode}
+        />
+        <Label htmlFor="debugMode">Modo de depuração</Label>
+        <span className="text-xs text-muted-foreground">(mostrar mensagens detalhadas de erro)</span>
+      </div>
+      
       <Alert className="mt-3 border-amber-500 bg-amber-50 text-amber-900 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-200">
         <AlertCircle className="h-4 w-4" />
         <AlertDescription>
@@ -138,12 +153,10 @@ const UniversalAssistanceForm = ({
             <li>Confirme que a URL base está correta</li> 
             <li>Ative a opção "Usar Proxy CORS" para resolver problemas de CORS</li>
             <li>Se o proxy atual não funcionar, selecione outro serviço de proxy</li>
-            <li>Verifique se o serviço de proxy selecionado está online</li>
-            <li>Se necessário, use um proxy CORS personalizado de sua confiança</li>
+            <li>Use o botão "Testar Conexão" para verificar se a API está acessível</li>
+            <li>Ative o modo de depuração para ver mensagens detalhadas de erro</li>
+            <li>Certifique-se que o domínio do site publicado está na lista de permissões da API</li>
           </ul>
-          <p className="text-xs mt-2">
-            O sistema tentará diversos métodos de conexão automaticamente.
-          </p>
         </AlertDescription>
       </Alert>
     </>
