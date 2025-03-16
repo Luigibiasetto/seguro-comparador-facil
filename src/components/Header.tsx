@@ -32,8 +32,9 @@ const Header = () => {
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         isScrolled
           ? "py-2 glass shadow-sm"
-          : "py-4 bg-transparent"
+          : "py-4 bg-mint-green"
       }`}
+      style={{ backgroundColor: isScrolled ? "" : "#DAF0E3" }}
     >
       <div className="container mx-auto px-4 md:px-6">
         <div className="flex items-center justify-between">
@@ -46,8 +47,8 @@ const Header = () => {
               className={({ isActive }) =>
                 `px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
                   isActive
-                    ? "bg-indigo-50 text-indigo-700"
-                    : "text-gray-700 hover:bg-gray-100"
+                    ? "bg-teal-50 text-teal-700"
+                    : "text-gray-700 hover:bg-teal-50"
                 }`
               }
             >
@@ -58,8 +59,8 @@ const Header = () => {
               className={({ isActive }) =>
                 `px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
                   isActive
-                    ? "bg-indigo-50 text-indigo-700"
-                    : "text-gray-700 hover:bg-gray-100"
+                    ? "bg-teal-50 text-teal-700"
+                    : "text-gray-700 hover:bg-teal-50"
                 }`
               }
             >
@@ -70,14 +71,14 @@ const Header = () => {
               className={({ isActive }) =>
                 `px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
                   isActive
-                    ? "bg-indigo-50 text-indigo-700"
-                    : "text-gray-700 hover:bg-gray-100"
+                    ? "bg-teal-50 text-teal-700"
+                    : "text-gray-700 hover:bg-teal-50"
                 }`
               }
             >
               Sobre Nós
             </NavLink>
-            <Button size="sm" className="ml-2 bg-indigo-600 hover:bg-indigo-700">
+            <Button size="sm" className="ml-2 bg-teal-600 hover:bg-teal-700">
               <Phone className="h-3.5 w-3.5 mr-1.5" />
               Contato
             </Button>
@@ -106,8 +107,8 @@ const Header = () => {
                 className={({ isActive }) =>
                   `px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
                     isActive
-                      ? "bg-indigo-50 text-indigo-700"
-                      : "text-gray-700 hover:bg-gray-100"
+                      ? "bg-teal-50 text-teal-700"
+                      : "text-gray-700 hover:bg-teal-50"
                   }`
                 }
                 onClick={() => setIsMobileMenuOpen(false)}
@@ -119,8 +120,8 @@ const Header = () => {
                 className={({ isActive }) =>
                   `px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
                     isActive
-                      ? "bg-indigo-50 text-indigo-700"
-                      : "text-gray-700 hover:bg-gray-100"
+                      ? "bg-teal-50 text-teal-700"
+                      : "text-gray-700 hover:bg-teal-50"
                   }`
                 }
                 onClick={() => setIsMobileMenuOpen(false)}
@@ -132,8 +133,8 @@ const Header = () => {
                 className={({ isActive }) =>
                   `px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
                     isActive
-                      ? "bg-indigo-50 text-indigo-700"
-                      : "text-gray-700 hover:bg-gray-100"
+                      ? "bg-teal-50 text-teal-700"
+                      : "text-gray-700 hover:bg-teal-50"
                   }`
                 }
                 onClick={() => setIsMobileMenuOpen(false)}
@@ -142,7 +143,7 @@ const Header = () => {
               </NavLink>
               <Button
                 size="sm"
-                className="mt-2 bg-indigo-600 hover:bg-indigo-700"
+                className="mt-2 bg-teal-600 hover:bg-teal-700"
               >
                 <Phone className="h-3.5 w-3.5 mr-1.5" />
                 Contato

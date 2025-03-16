@@ -16,7 +16,7 @@ const Logo: React.FC<LogoProps> = ({ className = '', textSize = 'text-xl' }) => 
       <img 
         src="/lovable-uploads/f5349c92-5133-425b-bff1-3f822a1861d1.png" 
         alt="Comparado" 
-        className="h-10 md:h-12"
+        className="h-9 md:h-11" 
       />
     </Link>
   );

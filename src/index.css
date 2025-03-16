@@ -33,6 +33,8 @@
     --ring: 173 80% 40%;
 
     --radius: 0.75rem;
+    
+    --mint-green: 146 33% 90%;
   }
 
   .dark {
@@ -91,6 +93,10 @@
     );
     background-attachment: fixed;
     background-size: cover;
+  }
+  
+  .bg-mint-green {
+    background-color: hsl(var(--mint-green));
   }
 }
 
