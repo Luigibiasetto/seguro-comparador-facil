@@ -1,3 +1,4 @@
+
 import { toast } from "sonner";
 import { getApiConfig, getApiUrl } from "../config";
 import { calculateTripDuration } from "../utils";
@@ -29,68 +30,58 @@ export const fetchUniversalAssistanceOffers = async (params: SearchParams): Prom
       'X-Requested-With': 'XMLHttpRequest'
     };
 
-    // Tentar autenticação
+    // Realizar autenticação via Basic Auth
     const username = apiConfig.providerSettings.username;
     const password = apiConfig.providerSettings.password;
     
-    // Obter token de autenticação
-    console.log("Tentando autenticação com:", { username });
+    console.log("Tentando autenticação com Basic Auth:", { username });
+    const basicAuth = btoa(`${username}:${password}`);
+    const authHeaders = {
+      ...headers,
+      'Authorization': `Basic ${basicAuth}`
+    };
+
+    // Realizar requisição de autenticação
+    const authUrl = getApiUrl('/auth/token');
+    console.log(`Tentando autenticação em: ${authUrl}`);
     
+    const authResponse = await fetch(authUrl, {
+      method: 'POST',
+      headers: authHeaders,
+      mode: 'cors'
+    });
+
     let token = null;
-    let authResponse = null;
     
-    try {
-      // Usar a função getApiUrl para obter a URL com ou sem proxy
-      const authUrl = getApiUrl('/auth/token');
-      console.log(`Tentando autenticação em: ${authUrl}`);
+    if (authResponse.ok) {
+      console.log("Resposta de autenticação:", authResponse);
+      console.log("Status:", authResponse.status);
       
-      const payload = { username, password };
-      console.log("Payload:", JSON.stringify(payload));
-      
-      authResponse = await fetch(authUrl, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(payload),
-        mode: 'cors'
-      });
-      
-      if (authResponse.ok) {
-        console.log("Resposta de autenticação:", authResponse);
-        console.log("Status:", authResponse.status);
+      try {
+        const responseData = await authResponse.json();
+        console.log("Dados de autenticação:", responseData);
         
-        try {
-          const responseData = await authResponse.json();
-          console.log("Dados de autenticação:", responseData);
-          
-          // Extrair token de diferentes formatos de resposta
-          token = responseData.token || 
-                  responseData.access_token || 
-                  responseData.accessToken || 
-                  (responseData.data && responseData.data.token);
-                  
-          if (token) {
-            console.log("Token obtido:", token);
-          }
-        } catch (jsonError) {
-          console.warn("Erro ao processar JSON:", jsonError);
-          // Tentar como texto
-          const textResponse = await authResponse.text();
-          console.log("Resposta como texto:", textResponse);
-          
-          // Verificar se parece com um token JWT
-          if (textResponse && /^[A-Za-z0-9-_=]+\.[A-Za-z0-9-_=]+\.?[A-Za-z0-9-_.+/=]*$/.test(textResponse)) {
-            token = textResponse;
-            console.log("Token extraído do texto:", token);
-          }
+        // Extrair token de diferentes formatos de resposta
+        token = responseData.token || 
+                responseData.access_token || 
+                responseData.accessToken || 
+                (responseData.data && responseData.data.token);
+                
+        if (token) {
+          console.log("Token obtido:", token);
         }
-      } else {
-        console.warn(`Falha na autenticação: ${authResponse.status}. Tentando modo alternativo...`);
-        // Se falhar, use um token simulado para tentar acessar diretamente
-        token = "mock-token-for-testing";
+      } catch (jsonError) {
+        console.warn("Erro ao processar JSON:", jsonError);
+        const textResponse = await authResponse.text();
+        console.log("Resposta como texto:", textResponse);
+        if (textResponse && /^[A-Za-z0-9-_=]+\.[A-Za-z0-9-_=]+\.?[A-Za-z0-9-_.+/=]*$/.test(textResponse)) {
+          token = textResponse;
+          console.log("Token extraído do texto:", token);
+        }
       }
-    } catch (authError) {
-      console.warn("Erro na autenticação:", authError);
-      // Se houver erro na autenticação, ainda tentaremos com um token simulado
+    } else {
+      console.warn(`Falha na autenticação: ${authResponse.status}`);
+      // Se falhar, usar token simulado para continuidade dos testes
       token = "mock-token-for-testing";
     }
     
@@ -99,13 +90,13 @@ export const fetchUniversalAssistanceOffers = async (params: SearchParams): Prom
     const departureFormatted = new Date(params.departureDate).toISOString().split('T')[0];
     const returnFormatted = new Date(params.returnDate).toISOString().split('T')[0];
     
-    // Adicionar token ao headers
-    const authHeaders = {
+    // Acrescentar token aos headers para a busca
+    const searchAuthHeaders = {
       ...headers,
       'Authorization': `Bearer ${token}`
     };
     
-    // Tentar diferentes endpoints para busca de planos
+    // Endpoints e payloads para a busca de planos
     const endpoints = [
       '/plans/search',
       '/plans',
@@ -113,7 +104,6 @@ export const fetchUniversalAssistanceOffers = async (params: SearchParams): Prom
       '/offers'
     ];
     
-    // Diferentes formatos de payload para busca
     const searchPayloads = [
       {
         origin: params.origin,
@@ -133,7 +123,7 @@ export const fetchUniversalAssistanceOffers = async (params: SearchParams): Prom
       }
     ];
     
-    // Tentar diferentes combinações de endpoints e payloads
+    // Tentar cada combinação de endpoint e payload
     for (const endpoint of endpoints) {
       for (const payload of searchPayloads) {
         try {
@@ -143,7 +133,7 @@ export const fetchUniversalAssistanceOffers = async (params: SearchParams): Prom
           
           const searchResponse = await fetch(searchUrl, {
             method: 'POST',
-            headers: authHeaders,
+            headers: searchAuthHeaders,
             body: JSON.stringify(payload),
             mode: 'cors'
           });
@@ -152,7 +142,6 @@ export const fetchUniversalAssistanceOffers = async (params: SearchParams): Prom
             const searchData = await searchResponse.json();
             console.log("Dados obtidos:", searchData);
             
-            // Processar resultados de diferentes formatos
             let plans = [];
             if (Array.isArray(searchData)) {
               plans = searchData;
@@ -172,14 +161,10 @@ export const fetchUniversalAssistanceOffers = async (params: SearchParams): Prom
             }
           } else {
             console.warn(`Falha na busca: ${searchResponse.status}`);
-            
-            // Se for erro 401 ou 403, pode ser problema com o token
             if (searchResponse.status === 401 || searchResponse.status === 403) {
               console.log("Erro de autorização. Tentando com outro endpoint...");
               continue;
             }
-            
-            // Tentar obter mais informações sobre o erro
             try {
               const errorText = await searchResponse.text();
               console.log("Detalhes do erro:", errorText);
@@ -193,14 +178,14 @@ export const fetchUniversalAssistanceOffers = async (params: SearchParams): Prom
       }
     }
     
-    // Tentar acessar planos diretamente sem payload (último recurso)
+    // Última tentativa: acesso direto sem payload
     try {
       const plansUrl = getApiUrl('/plans');
       console.log(`Tentando acessar planos diretamente em: ${plansUrl}`);
       
       const plansResponse = await fetch(plansUrl, {
         method: 'GET',
-        headers: authHeaders,
+        headers: searchAuthHeaders,
         mode: 'cors'
       });
       
@@ -225,7 +210,6 @@ export const fetchUniversalAssistanceOffers = async (params: SearchParams): Prom
       console.warn("Erro ao acessar planos diretamente:", plansError);
     }
     
-    // Se todas as tentativas falharem, usar dados mockados mas com aviso específico
     console.warn("Todas as tentativas de conexão falharam. Usando dados mockados.");
     
     if (apiConfig.useProxy) {
@@ -243,9 +227,8 @@ export const fetchUniversalAssistanceOffers = async (params: SearchParams): Prom
     console.error("Erro ao buscar dados da Universal Assistance:", error);
     toast.error("Erro ao conectar com a API da Universal Assistance. Tentando novamente com outro método...");
     
-    // Tentar método alternativo com fetch simples
+    // Teste simples de conectividade
     try {
-      // Tentar requisição simples para verificar se o servidor está acessível
       const testUrl = "https://jsonplaceholder.typicode.com/todos/1";
       const testResponse = await fetch(testUrl);
       console.log("Teste de conectividade:", testResponse.ok ? "Sucesso" : "Falha");
@@ -279,7 +262,7 @@ const processPlans = (plans: any[]): InsuranceOffer[] => {
     },
     benefits: extractBenefits(plan),
     rating: plan.rating || (4 + Math.random()),
-    recommended: index === 0, // Make the first one recommended
+    recommended: index === 0,
   }));
 };
 
@@ -319,7 +302,7 @@ const extractBenefits = (plan: any): string[] => {
   return ["COVID-19", "Telemedicina", "Traslado médico"];
 };
 
-// Function to generate mock offers
+// Função para gerar ofertas mockadas
 const generateMockOffers = (count: number): InsuranceOffer[] => {
   const mockOffers: InsuranceOffer[] = [];
   
@@ -339,8 +322,8 @@ const generateMockOffers = (count: number): InsuranceOffer[] => {
   ];
   
   for (let i = 0; i < count; i++) {
-    const price = Math.floor(Math.random() * 300) + 100; // 100-400
-    const medicalCoverage = Math.floor(Math.random() * 80000) + 20000; // 20000-100000
+    const price = Math.floor(Math.random() * 300) + 100;
+    const medicalCoverage = Math.floor(Math.random() * 80000) + 20000;
     
     mockOffers.push({
       id: `universal-mock-${i}`,
@@ -355,7 +338,7 @@ const generateMockOffers = (count: number): InsuranceOffer[] => {
       },
       benefits: benefits[i % benefits.length],
       rating: 4 + Math.random(),
-      recommended: i === 0, // Make the first one recommended
+      recommended: i === 0,
     });
   }
   
