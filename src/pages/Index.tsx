@@ -43,13 +43,13 @@ const Index = () => {
                 variant="outline" 
                 size="sm"
                 onClick={() => setIsApiConfigOpen(true)}
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 border-teal-700 text-teal-700 hover:bg-teal-50"
               >
                 <Settings className="w-4 h-4" />
                 Configurar API
               </Button>
               
-              <div className="flex items-center text-sm text-green-600 gap-1">
+              <div className="flex items-center text-sm text-green-500 gap-1">
                 <Shield className="w-4 h-4" />
                 <span>Seus dados estão protegidos</span>
               </div>
@@ -60,7 +60,7 @@ const Index = () => {
           <div className="text-right mb-4">
             <Link 
               to="/admin/login" 
-              className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
+              className="text-xs text-teal-600 hover:text-teal-800 transition-colors"
             >
               Acesso Administrativo
             </Link>
@@ -73,7 +73,7 @@ const Index = () => {
             transition={{ duration: 0.5, delay: 0.4 }}
             className="rounded-xl p-1" 
             style={{ 
-              background: "linear-gradient(180deg, #F2FCE2 0%, #FFFFFF 100%)",
+              background: "linear-gradient(180deg, rgba(220, 252, 231, 0.6) 0%, #FFFFFF 100%)",
               boxShadow: "0 4px 14px rgba(0, 0, 0, 0.08)" 
             }}
           >
