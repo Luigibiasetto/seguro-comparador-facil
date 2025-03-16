@@ -12,6 +12,7 @@ const Logo: React.FC<LogoProps> = ({ className = '', textSize = 'text-xl' }) => 
     <Link 
       to="/" 
       className={`flex items-center gap-2 group ${className}`}
+      aria-label="Voltar para a página inicial"
     >
       <img 
         src="/lovable-uploads/f5349c92-5133-425b-bff1-3f822a1861d1.png" 
