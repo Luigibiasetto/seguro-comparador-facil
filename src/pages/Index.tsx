@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { MapPin, CalendarDays, User, Settings, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -8,25 +8,10 @@ import Footer from "@/components/Footer";
 import ApiConfigModal from "@/components/ApiConfigModal";
 import SearchForm from "@/components/SearchForm";
 import CustomerReviews from "@/components/CustomerReviews";
-import { secureStore, secureRetrieve } from "@/services/security/dataSecurity";
 import { Link } from "react-router-dom";
 
 const Index = () => {
   const [isApiConfigOpen, setIsApiConfigOpen] = useState(false);
-  const [hasAcceptedPrivacy, setHasAcceptedPrivacy] = useState<boolean>(false);
-
-  // Check if user has previously accepted privacy terms
-  useEffect(() => {
-    const privacyAccepted = secureRetrieve<boolean>("privacy-accepted");
-    if (privacyAccepted) {
-      setHasAcceptedPrivacy(true);
-    }
-  }, []);
-
-  const handleAcceptPrivacy = () => {
-    secureStore("privacy-accepted", true);
-    setHasAcceptedPrivacy(true);
-  };
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -80,23 +65,6 @@ const Index = () => {
               Acesso Administrativo
             </Link>
           </div>
-
-          {/* Privacy Notice */}
-          {!hasAcceptedPrivacy && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3 }}
-              className="bg-indigo-50 p-4 rounded-lg mb-8 text-center"
-            >
-              <p className="text-sm text-gray-700 mb-2">
-                Valorizamos sua privacidade. Seus dados são criptografados e armazenados com segurança.
-              </p>
-              <Button size="sm" onClick={handleAcceptPrivacy}>
-                Entendi e Aceito
-              </Button>
-            </motion.div>
-          )}
 
           {/* Search Form with Gradient Background */}
           <motion.div
