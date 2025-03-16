@@ -157,6 +157,7 @@ const UniversalAssistanceForm = ({
             <li>Use o botão "Testar Conexão" para verificar se a API está acessível</li>
             <li>Ative o modo de depuração para ver mensagens detalhadas de erro</li>
             <li>Certifique-se que o domínio do site publicado está na lista de permissões da API</li>
+            <li>Se nenhuma das opções funcionar, tente utilizar a API sem autenticação</li>
           </ul>
         </AlertDescription>
       </Alert>

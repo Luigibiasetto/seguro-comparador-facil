@@ -7,7 +7,7 @@ import InsuranceOfferCard from "./InsuranceOfferCard";
 import ResultsPagination from "./ResultsPagination";
 import ResultsSorting from "./ResultsSorting";
 
-type SortType = "price" | "coverage" | "rating";
+type SortType = "price" | "coverage";
 type SortDirection = "asc" | "desc";
 
 interface ResultsListProps {
