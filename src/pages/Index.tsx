@@ -26,14 +26,14 @@ const Index = () => {
             transition={{ duration: 0.5 }}
             className="text-center mb-12 md:mb-16 relative rounded-2xl overflow-hidden"
             style={{ 
-              background: "linear-gradient(135deg, #00FF7F 0%, #42f5ad 100%)",
+              background: "linear-gradient(135deg, #E6F7EC 0%, #D4F5E2 100%)",
               boxShadow: "0 4px 25px rgba(0, 0, 0, 0.1)" 
             }}
           >
             {/* Content over the gradient background */}
             <div className="flex flex-col items-center justify-center px-6 py-10">
-              <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-6 max-w-3xl leading-tight uppercase tracking-wider">
-                SEU SEGURO VIAGEM IDEAL
+              <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-800 mb-6 max-w-3xl leading-tight uppercase tracking-wider">
+                ENCONTRE O SEGURO VIAGEM IDEAL PARA SUA PRÓXIMA AVENTURA
               </h1>
               
               {/* Move the API config button and info into the hero section */}
@@ -42,13 +42,13 @@ const Index = () => {
                   variant="outline" 
                   size="sm"
                   onClick={() => setIsApiConfigOpen(true)}
-                  className="flex items-center gap-2 bg-white/20 backdrop-blur-sm border-white/30 text-white hover:bg-white/30"
+                  className="flex items-center gap-2 bg-white/20 backdrop-blur-sm border-gray-200 text-gray-700 hover:bg-white/30"
                 >
                   <Settings className="w-4 h-4" />
                   Configurar API
                 </Button>
                 
-                <div className="flex items-center text-sm text-white gap-1">
+                <div className="flex items-center text-sm text-gray-700 gap-1">
                   <Shield className="w-4 h-4" />
                   <span>Seus dados estão protegidos</span>
                 </div>
