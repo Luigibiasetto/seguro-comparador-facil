@@ -19,40 +19,59 @@ const Index = () => {
       
       <main className="flex-grow">
         <div className="container mx-auto px-4 py-8 md:py-12 lg:py-16 max-w-7xl">
-          {/* Hero Header */}
-          <div className="text-center mb-8 md:mb-12">
-            <motion.h1
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-              className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-4"
-            >
-              Encontre o Seguro Viagem Ideal para sua Próxima Aventura
-            </motion.h1>
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-              className="text-lg text-gray-600 mb-6 md:mb-8"
-            >
-              Compare as melhores opções de seguro viagem e viaje com tranquilidade.
-            </motion.p>
+          {/* Hero com Imagem de Fundo */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="text-center mb-12 md:mb-16 relative rounded-2xl overflow-hidden"
+            style={{ 
+              height: "380px",
+              boxShadow: "0 4px 25px rgba(0, 0, 0, 0.1)" 
+            }}
+          >
+            {/* Imagem de fundo */}
+            <div 
+              className="absolute inset-0 w-full h-full bg-cover bg-center bg-no-repeat"
+              style={{ 
+                backgroundImage: "url('https://images.unsplash.com/photo-1500375592092-40eb2168fd21?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=3000&q=80')",
+                filter: "brightness(0.7)"
+              }}
+            ></div>
             
-            <div className="mt-6 flex flex-wrap gap-3 justify-center">
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => setIsApiConfigOpen(true)}
-                className="flex items-center gap-2 border-teal-700 text-teal-700 hover:bg-teal-50"
-              >
-                <Settings className="w-4 h-4" />
-                Configurar API
-              </Button>
-              
-              <div className="flex items-center text-sm text-green-500 gap-1">
-                <Shield className="w-4 h-4" />
-                <span>Seus dados estão protegidos</span>
-              </div>
+            {/* Overlay de gradiente para melhorar a legibilidade do texto */}
+            <div 
+              className="absolute inset-0 w-full h-full"
+              style={{ 
+                background: "linear-gradient(to bottom, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.6) 100%)" 
+              }}
+            ></div>
+            
+            {/* Conteúdo sobre a imagem */}
+            <div className="absolute inset-0 flex flex-col items-center justify-center px-6 py-10">
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 max-w-3xl leading-tight">
+                Encontre o Seguro Viagem Ideal para sua Próxima Aventura
+              </h1>
+              <p className="text-lg text-white mb-6 max-w-2xl">
+                Compare as melhores opções de seguro viagem e viaje com tranquilidade.
+              </p>
+            </div>
+          </motion.div>
+          
+          <div className="mt-6 flex flex-wrap gap-3 justify-center mb-12">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => setIsApiConfigOpen(true)}
+              className="flex items-center gap-2 border-teal-700 text-teal-700 hover:bg-teal-50"
+            >
+              <Settings className="w-4 h-4" />
+              Configurar API
+            </Button>
+            
+            <div className="flex items-center text-sm text-green-500 gap-1">
+              <Shield className="w-4 h-4" />
+              <span>Seus dados estão protegidos</span>
             </div>
           </div>
 
