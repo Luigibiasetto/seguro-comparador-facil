@@ -329,7 +329,7 @@ const SearchForm = ({ className = "", defaultExpanded = true }: SearchFormProps)
           <div className="flex items-end">
             <Button
               type="submit"
-              className="w-full bg-brand-600 hover:bg-brand-700 text-white font-medium py-2.5 flex items-center justify-center gap-2 group"
+              className="w-full bg-pink-500 hover:bg-pink-600 text-white font-medium py-2.5 flex items-center justify-center gap-2 group"
             >
               <Plane className="w-4 h-4" />
               <span>Buscar Seguros</span>
