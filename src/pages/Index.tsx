@@ -19,19 +19,21 @@ const Index = () => {
       
       <main className="flex-grow">
         <div className="container mx-auto px-4 py-8 md:py-12 lg:py-16 max-w-7xl">
-          {/* Hero Section with Gradient Background */}
+          {/* Hero Section with Beach Image and Gradient Background */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
             className="text-center mb-12 md:mb-16 relative rounded-2xl overflow-hidden"
             style={{ 
-              background: "linear-gradient(135deg, #E6F7EC 0%, #D4F5E2 100%)",
+              background: `linear-gradient(to right, rgba(209, 250, 229, 0.85) 0%, rgba(209, 250, 229, 0.4) 50%, transparent 100%), url('/lovable-uploads/7714c7bb-caff-486b-9549-646729e0ec8c.png')`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center right',
               boxShadow: "0 4px 25px rgba(0, 0, 0, 0.1)" 
             }}
           >
             {/* Content over the gradient background */}
-            <div className="flex flex-col items-center justify-center px-6 py-10">
+            <div className="flex flex-col items-center justify-center px-6 py-12 md:py-16">
               <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-teal-800 mb-6 max-w-3xl leading-tight uppercase tracking-wider">
                 ENCONTRE O SEGURO VIAGEM IDEAL PARA SUA PRÓXIMA AVENTURA
               </h1>
