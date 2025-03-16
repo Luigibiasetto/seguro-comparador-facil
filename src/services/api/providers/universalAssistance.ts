@@ -29,6 +29,8 @@ export const fetchUniversalAssistanceOffers = async (params: SearchParams): Prom
       'Origin': window.location.origin,
       'X-Requested-With': 'XMLHttpRequest',
       'Access-Control-Allow-Origin': '*',
+      'Cache-Control': 'no-cache',
+      'Pragma': 'no-cache',
       'Referrer-Policy': 'no-referrer'
     };
 
@@ -58,7 +60,9 @@ export const fetchUniversalAssistanceOffers = async (params: SearchParams): Prom
 
     if (token === "mock-token-for-testing") {
       console.warn("Usando token mockado. A autenticação real falhou.");
-      toast.warning("Usando dados simulados. A conexão com a API da Universal Assistance falhou.");
+      toast.warning("Usando dados simulados. A conexão com a API da Universal Assistance falhou.", {
+        duration: 8000
+      });
     } else {
       console.log("Autenticação bem sucedida. Token obtido.");
     }
@@ -111,55 +115,66 @@ export const fetchUniversalAssistanceOffers = async (params: SearchParams): Prom
       console.log(`Tentando buscar em: ${searchUrl}`);
       console.log("Payload:", JSON.stringify(payload));
       
-      const searchResponse = await fetch(searchUrl, {
-        method: 'POST',
-        headers: searchAuthHeaders,
-        body: JSON.stringify(payload),
-        mode: 'cors'
-      });
-      
-      if (searchResponse.ok) {
-        const searchData = await searchResponse.json();
-        console.log("Dados obtidos:", searchData);
+      try {
+        const searchResponse = await fetch(searchUrl, {
+          method: 'POST',
+          headers: searchAuthHeaders,
+          body: JSON.stringify(payload),
+          mode: 'cors'
+        });
         
-        let plans = [];
-        if (Array.isArray(searchData)) {
-          plans = searchData;
-        } else if (searchData.plans) {
-          plans = searchData.plans;
-        } else if (searchData.data) {
-          plans = searchData.data;
-        } else if (searchData.offers) {
-          plans = searchData.offers;
-        } else if (searchData.results) {
-          plans = searchData.results;
+        if (searchResponse.ok) {
+          const searchData = await searchResponse.json();
+          console.log("Dados obtidos:", searchData);
+          
+          let plans = [];
+          if (Array.isArray(searchData)) {
+            plans = searchData;
+          } else if (searchData.plans) {
+            plans = searchData.plans;
+          } else if (searchData.data) {
+            plans = searchData.data;
+          } else if (searchData.offers) {
+            plans = searchData.offers;
+          } else if (searchData.results) {
+            plans = searchData.results;
+          }
+          
+          if (plans && plans.length > 0) {
+            plansFound = true;
+            foundPlans = plans;
+            return true;
+          }
+        } else {
+          const status = searchResponse.status;
+          console.warn(`Falha na busca: ${status}`);
+          
+          // Registro mais detalhado para códigos comuns
+          if (status === 401 || status === 403) {
+            console.log("Erro de autorização. O token pode não ser válido.");
+          } else if (status === 404) {
+            console.log("Endpoint não encontrado. Verifique a URL base.");
+          } else if (status === 500) {
+            console.log("Erro interno do servidor. A API pode estar com problemas.");
+          }
+          
+          try {
+            const errorText = await searchResponse.text();
+            console.log("Detalhes do erro:", errorText);
+          } catch (e) {
+            console.log("Não foi possível obter detalhes do erro");
+          }
         }
-        
-        if (plans && plans.length > 0) {
-          plansFound = true;
-          foundPlans = plans;
-          return true;
-        }
-      } else {
-        const status = searchResponse.status;
-        console.warn(`Falha na busca: ${status}`);
-        
-        // Registro mais detalhado para códigos comuns
-        if (status === 401 || status === 403) {
-          console.log("Erro de autorização. O token pode não ser válido.");
-        } else if (status === 404) {
-          console.log("Endpoint não encontrado. Verifique a URL base.");
-        } else if (status === 500) {
-          console.log("Erro interno do servidor. A API pode estar com problemas.");
-        }
-        
-        try {
-          const errorText = await searchResponse.text();
-          console.log("Detalhes do erro:", errorText);
-        } catch (e) {
-          console.log("Não foi possível obter detalhes do erro");
+      } catch (fetchError) {
+        console.warn(`Erro de rede ao buscar ${endpoint}:`, fetchError);
+        if (apiConfig.debugMode) {
+          toast.error(`Erro ao buscar em ${endpoint}`, {
+            description: `${fetchError}`,
+            duration: 5000
+          });
         }
       }
+      
       return false;
     };
     
@@ -207,31 +222,36 @@ export const fetchUniversalAssistanceOffers = async (params: SearchParams): Prom
         const plansUrl = getApiUrl('/plans', proxyUrl);
         console.log(`Tentando acessar planos diretamente em: ${plansUrl}`);
         
-        const plansResponse = await fetch(plansUrl, {
-          method: 'GET',
-          headers: searchAuthHeaders,
-          mode: 'cors'
-        });
-        
-        if (plansResponse.ok) {
-          const plansData = await plansResponse.json();
-          console.log("Planos obtidos diretamente:", plansData);
+        try {
+          const plansResponse = await fetch(plansUrl, {
+            method: 'GET',
+            headers: searchAuthHeaders,
+            mode: 'cors'
+          });
           
-          let plans = [];
-          if (Array.isArray(plansData)) {
-            plans = plansData;
-          } else if (plansData.plans) {
-            plans = plansData.plans;
-          } else if (plansData.data) {
-            plans = plansData.data;
+          if (plansResponse.ok) {
+            const plansData = await plansResponse.json();
+            console.log("Planos obtidos diretamente:", plansData);
+            
+            let plans = [];
+            if (Array.isArray(plansData)) {
+              plans = plansData;
+            } else if (plansData.plans) {
+              plans = plansData.plans;
+            } else if (plansData.data) {
+              plans = plansData.data;
+            }
+            
+            if (plans && plans.length > 0) {
+              return plans;
+            }
+          } else {
+            console.warn(`Acesso direto falhou: ${plansResponse.status}`);
           }
-          
-          if (plans && plans.length > 0) {
-            return plans;
-          }
-        } else {
-          console.warn(`Acesso direto falhou: ${plansResponse.status}`);
+        } catch (directError) {
+          console.warn("Erro ao acessar planos diretamente:", directError);
         }
+        
         return null;
       };
       
