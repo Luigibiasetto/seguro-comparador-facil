@@ -79,6 +79,7 @@ export interface ApiConfig {
   useProxy?: boolean; // Added proxy flag
   proxyUrl?: string; // Added proxy URL
   fallbackProxies?: string[]; // Added array of fallback proxies
+  debugMode?: boolean; // Added debug mode flag
   providerSettings?: {
     clientId?: string;
     clientSecret?: string;
