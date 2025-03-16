@@ -26,13 +26,13 @@ const Index = () => {
             transition={{ duration: 0.5 }}
             className="text-center mb-12 md:mb-16 relative rounded-2xl overflow-hidden"
             style={{ 
-              background: "linear-gradient(135deg, #3CB371 0%, #FFB6C1 100%)",
+              background: "linear-gradient(135deg, #00FF7F 0%, #42f5ad 100%)",
               boxShadow: "0 4px 25px rgba(0, 0, 0, 0.1)" 
             }}
           >
             {/* Content over the gradient background */}
             <div className="flex flex-col items-center justify-center px-6 py-10">
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 max-w-3xl leading-tight uppercase">
+              <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-6 max-w-3xl leading-tight uppercase tracking-wider">
                 SEU SEGURO VIAGEM IDEAL
               </h1>
               
