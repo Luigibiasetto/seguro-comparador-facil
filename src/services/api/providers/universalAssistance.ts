@@ -1,6 +1,6 @@
 
 import { toast } from "sonner";
-import { getApiConfig, getApiUrl } from "../config";
+import { getApiConfig, getApiUrl, tryWithMultipleProxies } from "../config";
 import { calculateTripDuration } from "../utils";
 import { InsuranceOffer, SearchParams } from "../types";
 
@@ -21,68 +21,46 @@ export const fetchUniversalAssistanceOffers = async (params: SearchParams): Prom
       console.log("URL do proxy:", apiConfig.proxyUrl);
     }
 
-    // Configurar headers padrão para todas as requisições
+    // Configurar headers padrão atualizados para todas as requisições
     const headers = {
       ...(apiConfig.headers || {}),
       'Content-Type': 'application/json',
       'Accept': 'application/json',
       'Origin': window.location.origin,
-      'X-Requested-With': 'XMLHttpRequest'
+      'X-Requested-With': 'XMLHttpRequest',
+      'Access-Control-Allow-Origin': '*',
+      'Referrer-Policy': 'no-referrer'
     };
 
-    // Realizar autenticação via Basic Auth
-    const username = apiConfig.providerSettings.username;
-    const password = apiConfig.providerSettings.password;
-    
-    console.log("Tentando autenticação com Basic Auth:", { username });
-    const basicAuth = btoa(`${username}:${password}`);
-    const authHeaders = {
-      ...headers,
-      'Authorization': `Basic ${basicAuth}`
-    };
+    console.log("Headers configurados:", headers);
+    console.log("URL de origem:", window.location.origin);
 
-    // Realizar requisição de autenticação
-    const authUrl = getApiUrl('/auth/token');
-    console.log(`Tentando autenticação em: ${authUrl}`);
-    
-    const authResponse = await fetch(authUrl, {
-      method: 'POST',
-      headers: authHeaders,
-      mode: 'cors'
-    });
-
+    // Usar tryWithMultipleProxies para tentar com vários proxies se falhar
     let token = null;
-    
-    if (authResponse.ok) {
-      console.log("Resposta de autenticação:", authResponse);
-      console.log("Status:", authResponse.status);
-      
+    if (apiConfig.useProxy) {
       try {
-        const responseData = await authResponse.json();
-        console.log("Dados de autenticação:", responseData);
-        
-        // Extrair token de diferentes formatos de resposta
-        token = responseData.token || 
-                responseData.access_token || 
-                responseData.accessToken || 
-                (responseData.data && responseData.data.token);
-                
-        if (token) {
-          console.log("Token obtido:", token);
-        }
-      } catch (jsonError) {
-        console.warn("Erro ao processar JSON:", jsonError);
-        const textResponse = await authResponse.text();
-        console.log("Resposta como texto:", textResponse);
-        if (textResponse && /^[A-Za-z0-9-_=]+\.[A-Za-z0-9-_=]+\.?[A-Za-z0-9-_.+/=]*$/.test(textResponse)) {
-          token = textResponse;
-          console.log("Token extraído do texto:", token);
-        }
+        token = await tryWithMultipleProxies(async (proxyUrl) => {
+          return await authenticateUser(headers, proxyUrl);
+        });
+      } catch (error) {
+        console.error("Todas as tentativas de autenticação com proxy falharam:", error);
+        token = "mock-token-for-testing";
       }
     } else {
-      console.warn(`Falha na autenticação: ${authResponse.status}`);
-      // Se falhar, usar token simulado para continuidade dos testes
-      token = "mock-token-for-testing";
+      // Tentativa sem proxy
+      try {
+        token = await authenticateUser(headers);
+      } catch (error) {
+        console.error("Falha na autenticação sem proxy:", error);
+        token = "mock-token-for-testing";
+      }
+    }
+
+    if (token === "mock-token-for-testing") {
+      console.warn("Usando token mockado. A autenticação real falhou.");
+      toast.warning("Usando dados simulados. A conexão com a API da Universal Assistance falhou.");
+    } else {
+      console.log("Autenticação bem sucedida. Token obtido.");
     }
     
     // Preparar parâmetros de busca
@@ -123,88 +101,149 @@ export const fetchUniversalAssistanceOffers = async (params: SearchParams): Prom
       }
     ];
     
-    // Tentar cada combinação de endpoint e payload
-    for (const endpoint of endpoints) {
-      for (const payload of searchPayloads) {
+    // Tentar buscar planos
+    let plansFound = false;
+    let foundPlans = [];
+    
+    // Função para tentar buscar com um proxy específico
+    const tryFetchWithProxy = async (endpoint: string, payload: any, proxyUrl?: string) => {
+      const searchUrl = getApiUrl(endpoint, proxyUrl);
+      console.log(`Tentando buscar em: ${searchUrl}`);
+      console.log("Payload:", JSON.stringify(payload));
+      
+      const searchResponse = await fetch(searchUrl, {
+        method: 'POST',
+        headers: searchAuthHeaders,
+        body: JSON.stringify(payload),
+        mode: 'cors'
+      });
+      
+      if (searchResponse.ok) {
+        const searchData = await searchResponse.json();
+        console.log("Dados obtidos:", searchData);
+        
+        let plans = [];
+        if (Array.isArray(searchData)) {
+          plans = searchData;
+        } else if (searchData.plans) {
+          plans = searchData.plans;
+        } else if (searchData.data) {
+          plans = searchData.data;
+        } else if (searchData.offers) {
+          plans = searchData.offers;
+        } else if (searchData.results) {
+          plans = searchData.results;
+        }
+        
+        if (plans && plans.length > 0) {
+          plansFound = true;
+          foundPlans = plans;
+          return true;
+        }
+      } else {
+        const status = searchResponse.status;
+        console.warn(`Falha na busca: ${status}`);
+        
+        // Registro mais detalhado para códigos comuns
+        if (status === 401 || status === 403) {
+          console.log("Erro de autorização. O token pode não ser válido.");
+        } else if (status === 404) {
+          console.log("Endpoint não encontrado. Verifique a URL base.");
+        } else if (status === 500) {
+          console.log("Erro interno do servidor. A API pode estar com problemas.");
+        }
+        
         try {
-          const searchUrl = getApiUrl(endpoint);
-          console.log(`Tentando buscar em: ${searchUrl}`);
-          console.log("Payload:", JSON.stringify(payload));
-          
-          const searchResponse = await fetch(searchUrl, {
-            method: 'POST',
-            headers: searchAuthHeaders,
-            body: JSON.stringify(payload),
-            mode: 'cors'
-          });
-          
-          if (searchResponse.ok) {
-            const searchData = await searchResponse.json();
-            console.log("Dados obtidos:", searchData);
+          const errorText = await searchResponse.text();
+          console.log("Detalhes do erro:", errorText);
+        } catch (e) {
+          console.log("Não foi possível obter detalhes do erro");
+        }
+      }
+      return false;
+    };
+    
+    // Tentar cada combinação de endpoint e payload
+    if (apiConfig.useProxy) {
+      // Com proxy
+      for (const endpoint of endpoints) {
+        for (const payload of searchPayloads) {
+          try {
+            const success = await tryWithMultipleProxies(async (proxyUrl) => {
+              return await tryFetchWithProxy(endpoint, payload, proxyUrl);
+            });
             
-            let plans = [];
-            if (Array.isArray(searchData)) {
-              plans = searchData;
-            } else if (searchData.plans) {
-              plans = searchData.plans;
-            } else if (searchData.data) {
-              plans = searchData.data;
-            } else if (searchData.offers) {
-              plans = searchData.offers;
-            } else if (searchData.results) {
-              plans = searchData.results;
+            if (success && plansFound) {
+              console.log(`Encontrados ${foundPlans.length} planos.`);
+              return processPlans(foundPlans);
             }
-            
-            if (plans && plans.length > 0) {
-              console.log(`Encontrados ${plans.length} planos.`);
-              return processPlans(plans);
-            }
-          } else {
-            console.warn(`Falha na busca: ${searchResponse.status}`);
-            if (searchResponse.status === 401 || searchResponse.status === 403) {
-              console.log("Erro de autorização. Tentando com outro endpoint...");
-              continue;
-            }
-            try {
-              const errorText = await searchResponse.text();
-              console.log("Detalhes do erro:", errorText);
-            } catch (e) {
-              console.log("Não foi possível obter detalhes do erro");
-            }
+          } catch (searchError) {
+            console.warn(`Erro na requisição para ${endpoint}:`, searchError);
           }
-        } catch (searchError) {
-          console.warn(`Erro na requisição para ${endpoint}:`, searchError);
+        }
+      }
+    } else {
+      // Sem proxy
+      for (const endpoint of endpoints) {
+        for (const payload of searchPayloads) {
+          try {
+            const success = await tryFetchWithProxy(endpoint, payload);
+            if (success && plansFound) {
+              console.log(`Encontrados ${foundPlans.length} planos.`);
+              return processPlans(foundPlans);
+            }
+          } catch (searchError) {
+            console.warn(`Erro na requisição para ${endpoint}:`, searchError);
+          }
         }
       }
     }
     
     // Última tentativa: acesso direto sem payload
     try {
-      const plansUrl = getApiUrl('/plans');
-      console.log(`Tentando acessar planos diretamente em: ${plansUrl}`);
+      console.log("Tentando última alternativa: acesso direto aos planos");
       
-      const plansResponse = await fetch(plansUrl, {
-        method: 'GET',
-        headers: searchAuthHeaders,
-        mode: 'cors'
-      });
+      const tryDirectAccess = async (proxyUrl?: string) => {
+        const plansUrl = getApiUrl('/plans', proxyUrl);
+        console.log(`Tentando acessar planos diretamente em: ${plansUrl}`);
+        
+        const plansResponse = await fetch(plansUrl, {
+          method: 'GET',
+          headers: searchAuthHeaders,
+          mode: 'cors'
+        });
+        
+        if (plansResponse.ok) {
+          const plansData = await plansResponse.json();
+          console.log("Planos obtidos diretamente:", plansData);
+          
+          let plans = [];
+          if (Array.isArray(plansData)) {
+            plans = plansData;
+          } else if (plansData.plans) {
+            plans = plansData.plans;
+          } else if (plansData.data) {
+            plans = plansData.data;
+          }
+          
+          if (plans && plans.length > 0) {
+            return plans;
+          }
+        } else {
+          console.warn(`Acesso direto falhou: ${plansResponse.status}`);
+        }
+        return null;
+      };
       
-      if (plansResponse.ok) {
-        const plansData = await plansResponse.json();
-        console.log("Planos obtidos diretamente:", plansData);
-        
-        let plans = [];
-        if (Array.isArray(plansData)) {
-          plans = plansData;
-        } else if (plansData.plans) {
-          plans = plansData.plans;
-        } else if (plansData.data) {
-          plans = plansData.data;
-        }
-        
-        if (plans && plans.length > 0) {
-          return processPlans(plans);
-        }
+      let directPlans = null;
+      if (apiConfig.useProxy) {
+        directPlans = await tryWithMultipleProxies(tryDirectAccess);
+      } else {
+        directPlans = await tryDirectAccess();
+      }
+      
+      if (directPlans) {
+        return processPlans(directPlans);
       }
     } catch (plansError) {
       console.warn("Erro ao acessar planos diretamente:", plansError);
@@ -212,12 +251,15 @@ export const fetchUniversalAssistanceOffers = async (params: SearchParams): Prom
     
     console.warn("Todas as tentativas de conexão falharam. Usando dados mockados.");
     
+    // Mensagens de erro específicas baseadas na configuração
     if (apiConfig.useProxy) {
-      toast.error("Não foi possível conectar à API da Universal Assistance mesmo usando proxy. Verifique se o proxy está funcionando e tente outro serviço de proxy.", {
+      toast.error("Não foi possível conectar à API da Universal Assistance mesmo usando proxy.", {
+        description: "A API pode estar indisponível ou as credenciais podem estar incorretas.",
         duration: 8000
       });
     } else {
-      toast.error("Não foi possível conectar à API da Universal Assistance. Tente ativar a opção de proxy CORS nas configurações da API.", {
+      toast.error("Não foi possível conectar à API da Universal Assistance.", {
+        description: "Tente ativar a opção de proxy CORS nas configurações da API.",
         duration: 8000
       });
     }
@@ -225,7 +267,10 @@ export const fetchUniversalAssistanceOffers = async (params: SearchParams): Prom
     return generateMockOffers(5);
   } catch (error) {
     console.error("Erro ao buscar dados da Universal Assistance:", error);
-    toast.error("Erro ao conectar com a API da Universal Assistance. Tentando novamente com outro método...");
+    toast.error("Erro ao conectar com a API da Universal Assistance", {
+      description: "Verificando conectividade de rede...",
+      duration: 5000
+    });
     
     // Teste simples de conectividade
     try {
@@ -234,7 +279,10 @@ export const fetchUniversalAssistanceOffers = async (params: SearchParams): Prom
       console.log("Teste de conectividade:", testResponse.ok ? "Sucesso" : "Falha");
       
       if (testResponse.ok) {
-        toast.info("Conexão com internet confirmada. O problema pode ser específico da API da Universal Assistance ou relacionado a CORS.");
+        toast.info("Conexão com internet confirmada", {
+          description: "O problema pode ser específico da API da Universal Assistance ou relacionado a CORS.",
+          duration: 8000
+        });
       } else {
         toast.error("Não foi possível estabelecer conexão com a internet.");
       }
@@ -245,6 +293,82 @@ export const fetchUniversalAssistanceOffers = async (params: SearchParams): Prom
     
     return generateMockOffers(5);
   }
+};
+
+// Função auxiliar para autenticação
+const authenticateUser = async (headers: Record<string, string>, proxyUrl?: string): Promise<string> => {
+  const apiConfig = getApiConfig();
+  
+  // Realizar autenticação via Basic Auth
+  const username = apiConfig.providerSettings!.username!;
+  const password = apiConfig.providerSettings!.password!;
+  
+  console.log("Tentando autenticação com Basic Auth:", { username });
+  const basicAuth = btoa(`${username}:${password}`);
+  const authHeaders = {
+    ...headers,
+    'Authorization': `Basic ${basicAuth}`
+  };
+
+  // Tentar diversos endpoints de autenticação
+  const authEndpoints = [
+    '/auth/token',
+    '/auth',
+    '/token',
+    '/login'
+  ];
+  
+  let token = null;
+  
+  for (const endpoint of authEndpoints) {
+    try {
+      const authUrl = getApiUrl(endpoint, proxyUrl);
+      console.log(`Tentando autenticação em: ${authUrl}`);
+      
+      const authResponse = await fetch(authUrl, {
+        method: 'POST',
+        headers: authHeaders,
+        mode: 'cors'
+      });
+      
+      if (authResponse.ok) {
+        console.log("Resposta de autenticação:", authResponse);
+        console.log("Status:", authResponse.status);
+        
+        try {
+          const responseData = await authResponse.json();
+          console.log("Dados de autenticação:", responseData);
+          
+          // Extrair token de diferentes formatos de resposta
+          token = responseData.token || 
+                  responseData.access_token || 
+                  responseData.accessToken || 
+                  (responseData.data && responseData.data.token);
+                  
+          if (token) {
+            console.log("Token obtido:", token);
+            return token;
+          }
+        } catch (jsonError) {
+          console.warn("Erro ao processar JSON:", jsonError);
+          const textResponse = await authResponse.text();
+          console.log("Resposta como texto:", textResponse);
+          if (textResponse && /^[A-Za-z0-9-_=]+\.[A-Za-z0-9-_=]+\.?[A-Za-z0-9-_.+/=]*$/.test(textResponse)) {
+            token = textResponse;
+            console.log("Token extraído do texto:", token);
+            return token;
+          }
+        }
+      } else {
+        console.warn(`Falha na autenticação em ${endpoint}: ${authResponse.status}`);
+      }
+    } catch (error) {
+      console.warn(`Erro ao tentar autenticação em ${endpoint}:`, error);
+    }
+  }
+  
+  // Se chegou aqui, nenhuma tentativa de autenticação teve sucesso
+  throw new Error("Não foi possível autenticar com nenhum dos endpoints");
 };
 
 // Helper function to process API plans into the app's format
