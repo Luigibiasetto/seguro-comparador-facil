@@ -20,8 +20,8 @@ const ApiConfigForm = ({ onOpenChange }: ApiConfigFormProps) => {
   const [baseUrl, setBaseUrl] = useState("https://api-br.universal-assistance.com/v1");
   const [apiKey, setApiKey] = useState("");
   const [useProxy, setUseProxy] = useState(true);
-  const [proxyUrl, setProxyUrl] = useState("https://corsproxy.io/?");
-  const [debugMode, setDebugMode] = useState(false);
+  const [proxyUrl, setProxyUrl] = useState("https://api.allorigins.win/raw?url=");
+  const [debugMode, setDebugMode] = useState(true);
   
   const testConnection = async () => {
     try {
@@ -127,11 +127,11 @@ const ApiConfigForm = ({ onOpenChange }: ApiConfigFormProps) => {
         proxyUrl: useProxy ? proxyUrl : undefined,
         debugMode,
         fallbackProxies: [
+          "https://api.allorigins.win/raw?url=",
           "https://corsproxy.io/?",
           "https://cors-proxy.htmldriven.com/?url=",
           "https://cors.bridged.cc/",
-          "https://proxy.cors.sh/",
-          "https://api.allorigins.win/raw?url="
+          "https://proxy.cors.sh/"
         ]
       };
       

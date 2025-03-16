@@ -6,15 +6,15 @@ let apiConfig: ApiConfig = {
   baseUrl: "https://api-br.universal-assistance.com/v1",
   apiKey: "",
   provider: "universal-assist",
-  useProxy: true, // Added proxy support
-  proxyUrl: "https://corsproxy.io/?", // Default CORS proxy
-  debugMode: false,
+  useProxy: true,
+  proxyUrl: "https://api.allorigins.win/raw?url=", // Updated default CORS proxy
+  debugMode: true,
   fallbackProxies: [
+    "https://api.allorigins.win/raw?url=",
     "https://corsproxy.io/?",
     "https://cors-proxy.htmldriven.com/?url=",
     "https://cors.bridged.cc/",
-    "https://proxy.cors.sh/",
-    "https://api.allorigins.win/raw?url="
+    "https://proxy.cors.sh/"
   ],
   providerSettings: {
     username: "raphaelbellei",
@@ -125,7 +125,7 @@ export const tryWithMultipleProxies = async <T>(
     
     // Try each fallback proxy
     if (config.fallbackProxies && config.fallbackProxies.length > 0) {
-      const uniqueProxies = [...new Set([...config.fallbackProxies, "https://api.allorigins.win/raw?url="])];
+      const uniqueProxies = [...new Set([...config.fallbackProxies])];
       
       for (const proxy of uniqueProxies) {
         if (proxy === config.proxyUrl) continue; // Skip if it's the same as the primary

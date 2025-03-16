@@ -22,11 +22,11 @@ interface UniversalAssistanceFormProps {
 }
 
 const PROXY_OPTIONS = [
+  { value: "https://api.allorigins.win/raw?url=", label: "allorigins.win (recomendado)" },
   { value: "https://corsproxy.io/?", label: "corsproxy.io" },
   { value: "https://cors-proxy.htmldriven.com/?url=", label: "htmldriven.com" },
   { value: "https://cors.bridged.cc/", label: "bridged.cc" },
   { value: "https://proxy.cors.sh/", label: "cors.sh" },
-  { value: "https://api.allorigins.win/raw?url=", label: "allorigins.win" },
 ];
 
 const UniversalAssistanceForm = ({ 
@@ -152,6 +152,7 @@ const UniversalAssistanceForm = ({
             <li>Verifique se as credenciais estão corretas</li>
             <li>Confirme que a URL base está correta</li> 
             <li>Ative a opção "Usar Proxy CORS" para resolver problemas de CORS</li>
+            <li>Utilize o proxy <strong>allorigins.win</strong> para melhores resultados</li>
             <li>Se o proxy atual não funcionar, selecione outro serviço de proxy</li>
             <li>Use o botão "Testar Conexão" para verificar se a API está acessível</li>
             <li>Ative o modo de depuração para ver mensagens detalhadas de erro</li>
