@@ -22,9 +22,45 @@ const loginSchema = z.object({
   password: z.string().min(6, 'A senha deve ter pelo menos 6 caracteres'),
 });
 
+// Função para validar CPF
+const validateCPF = (cpf: string) => {
+  // Remove caracteres não numéricos
+  cpf = cpf.replace(/[^\d]/g, '');
+  
+  // Verifica se tem 11 dígitos
+  if (cpf.length !== 11) return false;
+  
+  // Verifica se todos os dígitos são iguais
+  if (/^(\d)\1+$/.test(cpf)) return false;
+  
+  // Validação do dígito verificador
+  let sum = 0;
+  for (let i = 0; i < 9; i++) {
+    sum += parseInt(cpf.charAt(i)) * (10 - i);
+  }
+  
+  let remainder = sum % 11;
+  let digit1 = remainder < 2 ? 0 : 11 - remainder;
+  
+  if (parseInt(cpf.charAt(9)) !== digit1) return false;
+  
+  sum = 0;
+  for (let i = 0; i < 10; i++) {
+    sum += parseInt(cpf.charAt(i)) * (11 - i);
+  }
+  
+  remainder = sum % 11;
+  let digit2 = remainder < 2 ? 0 : 11 - remainder;
+  
+  return parseInt(cpf.charAt(10)) === digit2;
+};
+
 // Esquema de validação para o registro
 const registerSchema = z.object({
   name: z.string().min(3, 'O nome deve ter pelo menos 3 caracteres'),
+  cpf: z.string()
+    .min(11, 'CPF deve ter 11 dígitos')
+    .refine(validateCPF, { message: 'CPF inválido' }),
   email: z.string().email('Email inválido'),
   password: z.string().min(6, 'A senha deve ter pelo menos 6 caracteres'),
   confirmPassword: z.string().min(6, 'A senha deve ter pelo menos 6 caracteres'),
@@ -43,6 +79,15 @@ const Auth = () => {
   const [activeTab, setActiveTab] = useState('login');
   const redirectTo = location.state?.from || '/';
 
+  // Formatação do CPF enquanto digita
+  const formatCPF = (value: string) => {
+    value = value.replace(/\D/g, '');
+    value = value.replace(/(\d{3})(\d)/, '$1.$2');
+    value = value.replace(/(\d{3})(\d)/, '$1.$2');
+    value = value.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+    return value;
+  };
+
   // Form para login
   const loginForm = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -57,6 +102,7 @@ const Auth = () => {
     resolver: zodResolver(registerSchema),
     defaultValues: {
       name: '',
+      cpf: '',
       email: '',
       password: '',
       confirmPassword: '',
@@ -107,12 +153,14 @@ const Auth = () => {
 
   const handleRegister = async (values: RegisterFormValues) => {
     try {
+      // Registro no Supabase Auth
       const { error } = await supabase.auth.signUp({
         email: values.email,
         password: values.password,
         options: {
           data: {
             name: values.name,
+            cpf: values.cpf.replace(/\D/g, ''), // Salva CPF sem formatação
           },
         },
       });
@@ -137,6 +185,12 @@ const Auth = () => {
 
   const handleGoBack = () => {
     navigate(-1);
+  };
+
+  // Manipulador para formatar CPF enquanto digita
+  const handleCPFChange = (e: React.ChangeEvent<HTMLInputElement>, onChange: (...event: any[]) => void) => {
+    const formattedValue = formatCPF(e.target.value);
+    onChange(formattedValue);
   };
 
   return (
@@ -248,6 +302,27 @@ const Auth = () => {
                               <Input 
                                 placeholder="João Silva"
                                 {...field} 
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={registerForm.control}
+                        name="cpf"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>CPF</FormLabel>
+                            <FormControl>
+                              <Input 
+                                placeholder="123.456.789-00" 
+                                maxLength={14}
+                                onChange={(e) => handleCPFChange(e, field.onChange)}
+                                value={field.value}
+                                onBlur={field.onBlur}
+                                name={field.name}
                               />
                             </FormControl>
                             <FormMessage />

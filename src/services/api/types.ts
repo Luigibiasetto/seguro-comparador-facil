@@ -121,6 +121,15 @@ export interface Order {
   created_at?: string;
 }
 
+// Interface para cadastro/perfil de usuário
+export interface UserProfile {
+  id?: string;
+  email: string;
+  name: string;
+  cpf: string; // Novo campo CPF para cadastro
+  phone?: string;
+  created_at?: string;
+}
+
 // Helper type for Supabase Json fields
 export type Json = any;
-
