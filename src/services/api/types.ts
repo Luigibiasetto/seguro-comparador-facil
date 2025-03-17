@@ -1,11 +1,35 @@
 
-// Types for the insurance API
-export interface InsuranceProvider {
-  id: string;
-  name: string;
-  logo: string;
+// Tipos para a configuração da API
+export interface ApiConfig {
+  baseUrl: string;
+  apiKey: string;
+  provider: string;
+  useProxy: boolean;
+  proxyUrl?: string;
+  debugMode: boolean;
+  useSupabase?: boolean; // Nova opção
+  fallbackProxies?: string[];
+  providerSettings?: {
+    username?: string;
+    password?: string;
+  };
+  headers?: Record<string, string>;
 }
 
+// Tipo para parâmetros de busca
+export interface SearchParams {
+  origin: string;
+  destination: string;
+  departureDate: string;
+  returnDate: string;
+  passengers: {
+    adults: number;
+    children: number;
+    ages: number[];
+  };
+}
+
+// Tipo para uma oferta de seguro
 export interface InsuranceOffer {
   id: string;
   providerId: string;
@@ -16,76 +40,15 @@ export interface InsuranceOffer {
     baggage: number;
     cancellation: number;
     delay: number;
-    other?: Record<string, number>;
   };
   benefits: string[];
-  rating?: number; // Made optional
+  rating: number;
   recommended: boolean;
 }
 
-export interface SearchParams {
-  origin: string;
-  destination: string;
-  departureDate: string;
-  returnDate: string;
-  passengers: {
-    count: number;
-    ages: number[];
-  };
-  phone?: string;
-}
-
-export interface CustomerInfo {
-  documentType: 'cpf' | 'passport';
-  documentNumber: string;
-  fullName: string;
-  birthDate: string;
-  email: string;
-  phone: string;
-  emergencyContact: {
-    name: string;
-    phone: string;
-  };
-  address: {
-    street: string;
-    number: string;
-    complement?: string;
-    city: string;
-    state: string;
-    zipCode: string;
-    country: string;
-  };
-}
-
-export interface CheckoutData {
-  offer: InsuranceOffer;
-  provider: InsuranceProvider;
-  search: SearchParams;
-  customer: CustomerInfo;
-  paymentMethod: 'pix' | 'creditCard';
-  creditCardInfo?: {
-    number: string;
-    name: string;
-    expiry: string;
-    cvv: string;
-  };
-}
-
-// API configuration
-export interface ApiConfig {
-  baseUrl: string;
-  apiKey?: string;
-  provider?: string;
-  useProxy?: boolean; // Added proxy flag
-  proxyUrl?: string; // Added proxy URL
-  fallbackProxies?: string[]; // Added array of fallback proxies
-  debugMode?: boolean; // Added debug mode flag
-  providerSettings?: {
-    clientId?: string;
-    clientSecret?: string;
-    username?: string;
-    password?: string;
-    endpoint?: string;
-  };
-  headers?: Record<string, string>;
+// Tipo para um provedor de seguros
+export interface InsuranceProvider {
+  id: string;
+  name: string;
+  logo: string;
 }

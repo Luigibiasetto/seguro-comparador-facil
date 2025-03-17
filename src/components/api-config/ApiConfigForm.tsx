@@ -1,13 +1,13 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { DialogClose, DialogFooter } from "@/components/ui/dialog";
-import { Check, Bug } from "lucide-react";
+import { Check, Bug, Database } from "lucide-react";
 import { toast } from "sonner";
 import { configureInsuranceAPI, getApiConfig } from "@/services/api/config";
 import UniversalAssistanceForm from "./UniversalAssistanceForm";
 import ProviderSelect from "./ProviderSelect";
 import GenericApiForm from "./GenericApiForm";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ApiConfigFormProps {
   onOpenChange: (open: boolean) => void;
@@ -22,12 +22,48 @@ const ApiConfigForm = ({ onOpenChange }: ApiConfigFormProps) => {
   const [useProxy, setUseProxy] = useState(true);
   const [proxyUrl, setProxyUrl] = useState("https://api.allorigins.win/raw?url=");
   const [debugMode, setDebugMode] = useState(true);
+  const [useSupabase, setUseSupabase] = useState(true);
   
   const testConnection = async () => {
     try {
       toast.info("Testando conexão com a API...", {
         id: "api-test",
       });
+      
+      if (useSupabase && apiProvider === "universal-assist") {
+        try {
+          toast.info("Testando conexão via Supabase Edge Function...", {
+            id: "api-test",
+          });
+          
+          const { data, error } = await supabase.functions.invoke('universal-assist/test');
+          
+          if (error) {
+            console.error("Erro ao chamar Edge Function:", error);
+            toast.error("Falha ao testar via Supabase", {
+              id: "api-test",
+              description: error.message
+            });
+          } else if (data && data.success) {
+            toast.success("Conexão via Supabase bem-sucedida!", {
+              id: "api-test",
+              description: data.details || "Autenticação realizada com sucesso"
+            });
+            return;
+          } else {
+            toast.error("Falha na conexão via Supabase", {
+              id: "api-test",
+              description: data?.details || "Erro desconhecido"
+            });
+          }
+        } catch (edgeFunctionError) {
+          console.error("Erro ao invocar Edge Function:", edgeFunctionError);
+          toast.error("Erro ao chamar Edge Function", {
+            id: "api-test",
+            description: "Verifique se a função está implantada corretamente"
+          });
+        }
+      }
       
       // Apply temporary configuration for testing
       const tempConfig = {
@@ -190,6 +226,7 @@ const ApiConfigForm = ({ onOpenChange }: ApiConfigFormProps) => {
         useProxy,
         proxyUrl: useProxy ? proxyUrl : undefined,
         debugMode,
+        useSupabase,
         fallbackProxies: [
           "https://api.allorigins.win/raw?url=",
           "https://corsproxy.io/?",
@@ -268,6 +305,30 @@ const ApiConfigForm = ({ onOpenChange }: ApiConfigFormProps) => {
       {apiProvider === "universal-assist" ? (
         <div className="bg-muted p-4 rounded-md">
           <h3 className="text-sm font-medium mb-3">Universal Assistance API</h3>
+          
+          <div className="flex items-center space-x-2 mb-4">
+            <input
+              type="checkbox"
+              id="useSupabase"
+              checked={useSupabase}
+              onChange={(e) => setUseSupabase(e.target.checked)}
+              className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+            />
+            <label htmlFor="useSupabase" className="text-sm font-medium text-gray-700 flex items-center">
+              <Database className="h-4 w-4 mr-1" />
+              Usar Supabase Edge Function (recomendado)
+            </label>
+          </div>
+          
+          {useSupabase && (
+            <div className="bg-green-50 border border-green-200 rounded p-3 mb-4">
+              <p className="text-xs text-green-800">
+                A função Supabase Edge Function está ativada. Isso contornará os problemas de CORS 
+                e realizará a autenticação de forma segura pelo servidor.
+              </p>
+            </div>
+          )}
+          
           <UniversalAssistanceForm 
             username={username}
             setUsername={setUsername}

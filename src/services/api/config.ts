@@ -9,6 +9,7 @@ let apiConfig: ApiConfig = {
   useProxy: true,
   proxyUrl: "https://api.allorigins.win/raw?url=", // Updated default CORS proxy
   debugMode: true,
+  useSupabase: true, // Nova opção para usar Supabase Edge Function
   fallbackProxies: [
     "https://api.allorigins.win/raw?url=",
     "https://corsproxy.io/?",
@@ -63,6 +64,7 @@ export const configureInsuranceAPI = (config: Partial<ApiConfig>) => {
     console.log("Origem atual:", window.location.origin);
     console.log("API base URL:", apiConfig.baseUrl);
     console.log("Usando proxy:", apiConfig.useProxy ? "Sim" : "Não");
+    console.log("Usando Supabase:", apiConfig.useSupabase ? "Sim" : "Não");
     if (apiConfig.useProxy) {
       console.log("URL do proxy:", apiConfig.proxyUrl);
     }
