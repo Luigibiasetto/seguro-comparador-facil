@@ -21,9 +21,6 @@ const ApiConfigForm = ({ onOpenChange }: ApiConfigFormProps) => {
   const [password, setPassword] = useState("Anthony25");
   const [baseUrl, setBaseUrl] = useState("https://api-br.universal-assistance.com/v1");
   const [apiKey, setApiKey] = useState("");
-  const [useProxy, setUseProxy] = useState(true);
-  const [proxyUrl, setProxyUrl] = useState("https://api.allorigins.win/raw?url=");
-  const [debugMode, setDebugMode] = useState(true);
   const [testingConnection, setTestingConnection] = useState(false);
   const [testResults, setTestResults] = useState<any>(null);
   
@@ -40,9 +37,6 @@ const ApiConfigForm = ({ onOpenChange }: ApiConfigFormProps) => {
       const tempConfig = {
         provider: apiProvider,
         baseUrl: baseUrl.replace(/\/+$/, ""),
-        useProxy,
-        proxyUrl: useProxy ? proxyUrl : undefined,
-        debugMode: true, // Force debug mode for testing
         providerSettings: {
           username,
           password
@@ -143,16 +137,9 @@ const ApiConfigForm = ({ onOpenChange }: ApiConfigFormProps) => {
       const config: any = { 
         useMock: false,
         provider: apiProvider,
-        useProxy,
-        proxyUrl: useProxy ? proxyUrl : undefined,
-        debugMode,
-        fallbackProxies: [
-          "https://api.allorigins.win/raw?url=",
-          "https://corsproxy.io/?",
-          "https://cors-proxy.htmldriven.com/?url=",
-          "https://cors.bridged.cc/",
-          "https://proxy.cors.sh/"
-        ]
+        useProxy: false,
+        debugMode: false,
+        fallbackProxies: []
       };
       
       if (apiProvider === "universal-assist") {
@@ -240,12 +227,6 @@ const ApiConfigForm = ({ onOpenChange }: ApiConfigFormProps) => {
             setPassword={setPassword}
             baseUrl={baseUrl}
             setBaseUrl={setBaseUrl}
-            useProxy={useProxy}
-            setUseProxy={setUseProxy}
-            proxyUrl={proxyUrl}
-            setProxyUrl={setProxyUrl}
-            debugMode={debugMode}
-            setDebugMode={setDebugMode}
           />
         </div>
       ) : (
@@ -295,12 +276,7 @@ const ApiConfigForm = ({ onOpenChange }: ApiConfigFormProps) => {
                   <ul className="list-disc pl-4 mt-1">
                     <li>Verifique se a URL base está correta</li>
                     <li>Confirme as credenciais de acesso</li>
-                    {!useProxy && (
-                      <li>Ative a opção "Usar Proxy CORS"</li>
-                    )}
-                    {useProxy && (
-                      <li>Tente outro serviço de proxy CORS</li>
-                    )}
+                    <li>Certifique-se que as credenciais estão sendo enviadas como "Login" e "Senha" nos headers</li>
                   </ul>
                 </div>
               )}
