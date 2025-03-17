@@ -35,7 +35,22 @@ const LeadsTable = () => {
         return;
       }
 
-      setLeads(data || []);
+      // Converter do formato do banco para o formato do frontend
+      const formattedLeads: Lead[] = (data || []).map(item => ({
+        id: item.id,
+        email: item.email,
+        phone: item.phone,
+        origin: item.origin,
+        destination: item.destination,
+        departureDate: item.departure_date,
+        returnDate: item.return_date,
+        departure_date: item.departure_date,
+        return_date: item.return_date,
+        passengers: item.passengers,
+        created_at: item.created_at
+      }));
+
+      setLeads(formattedLeads);
     } catch (error) {
       console.error("Erro inesperado:", error);
       toast.error("Erro ao carregar dados");
@@ -44,7 +59,9 @@ const LeadsTable = () => {
     }
   };
 
-  const formatDate = (dateString: string | Date) => {
+  const formatDate = (dateString: string | Date | undefined) => {
+    if (!dateString) return "Data inválida";
+    
     try {
       const date = typeof dateString === 'string' ? new Date(dateString) : dateString;
       return format(date, "dd/MM/yyyy", { locale: ptBR });

@@ -80,15 +80,19 @@ export interface CustomerInfo {
   };
 }
 
-// Novo tipo para os leads
+// Interface para leads adaptada para corresponder à estrutura da tabela do Supabase
 export interface Lead {
   id?: string;
   email: string;
   phone: string;
   origin: string;
   destination: string;
-  departureDate: Date | string;
-  returnDate: Date | string;
+  // Campos usados no frontend
+  departureDate?: Date | string; 
+  returnDate?: Date | string;
+  // Campos usados no banco (snake_case)
+  departure_date?: string;
+  return_date?: string;
   passengers: {
     adults: number;
     children: number;

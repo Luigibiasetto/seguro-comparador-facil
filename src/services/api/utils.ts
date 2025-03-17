@@ -15,6 +15,7 @@ export const parseSearchParams = (searchParams: URLSearchParams) => {
   const returnDate = searchParams.get("returnDate") || new Date().toISOString();
   const passengersStr = searchParams.get("passengers") || '{"count":1,"ages":[30]}';
   const phone = searchParams.get("phone") || "";
+  const email = searchParams.get("email") || ""; // Incluindo email nos parâmetros
   
   let passengers;
   try {
@@ -29,6 +30,7 @@ export const parseSearchParams = (searchParams: URLSearchParams) => {
     departureDate,
     returnDate,
     passengers,
-    phone
+    phone,
+    email
   };
 };

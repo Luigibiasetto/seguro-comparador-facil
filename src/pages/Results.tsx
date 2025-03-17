@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ArrowLeft, Settings } from "lucide-react";
@@ -35,6 +36,11 @@ const Results = () => {
   const navigate = useNavigate();
   const searchParams = new URLSearchParams(location.search);
   const parsedParams = parseSearchParams(searchParams);
+
+  // Garantir que o campo email esteja presente
+  if (!parsedParams.email) {
+    parsedParams.email = searchParams.get("email") || "";
+  }
 
   const [isLoading, setIsLoading] = useState(true);
   const [offers, setOffers] = useState<InsuranceOffer[]>([]);

@@ -153,13 +153,15 @@ const SearchForm = ({ className = "", defaultExpanded = true }: SearchFormProps)
   // Salvar lead no banco de dados
   const saveLead = async () => {
     try {
+      if (!departureDate || !returnDate) return false;
+      
       const leadData = {
         email,
         phone,
         origin,
         destination,
-        departure_date: departureDate,
-        return_date: returnDate,
+        departure_date: departureDate.toISOString(),
+        return_date: returnDate.toISOString(),
         passengers: {
           adults: passengers.count,
           children: 0,

@@ -146,9 +146,20 @@ export const getInsuranceProviders = async (): Promise<InsuranceProvider[]> => {
 // Salvar lead no banco de dados
 export const saveLead = async (lead: Omit<Lead, 'id' | 'created_at'>): Promise<boolean> => {
   try {
+    // Converter do formato do frontend para o formato do banco
+    const supabaseLead = {
+      email: lead.email,
+      phone: lead.phone,
+      origin: lead.origin,
+      destination: lead.destination,
+      departure_date: typeof lead.departureDate === 'string' ? lead.departureDate : lead.departureDate?.toISOString(),
+      return_date: typeof lead.returnDate === 'string' ? lead.returnDate : lead.returnDate?.toISOString(),
+      passengers: lead.passengers
+    };
+
     const { error } = await supabase
       .from('leads')
-      .insert([lead]);
+      .insert([supabaseLead]);
 
     if (error) {
       console.error("Erro ao salvar lead:", error);
@@ -176,7 +187,22 @@ export const getLeads = async (): Promise<Lead[]> => {
       return [];
     }
 
-    return data || [];
+    // Converter do formato do banco para o formato do frontend
+    const leads: Lead[] = (data || []).map(item => ({
+      id: item.id,
+      email: item.email,
+      phone: item.phone,
+      origin: item.origin,
+      destination: item.destination,
+      departureDate: item.departure_date,
+      returnDate: item.return_date,
+      departure_date: item.departure_date,
+      return_date: item.return_date,
+      passengers: item.passengers,
+      created_at: item.created_at
+    }));
+
+    return leads;
   } catch (error) {
     console.error("Erro inesperado:", error);
     toast.error("Erro ao carregar dados");
