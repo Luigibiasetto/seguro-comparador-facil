@@ -101,3 +101,6 @@ export interface Lead {
   };
   created_at?: Date | string;
 }
+
+// Helper type for Supabase Json fields
+export type Json = any;

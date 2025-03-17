@@ -1,6 +1,6 @@
 
 import { useEffect, useState } from "react";
-import { Lead } from "@/services/api/types";
+import { Lead, Json } from "@/services/api/types";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
@@ -36,19 +36,30 @@ const LeadsTable = () => {
       }
 
       // Converter do formato do banco para o formato do frontend
-      const formattedLeads: Lead[] = (data || []).map(item => ({
-        id: item.id,
-        email: item.email,
-        phone: item.phone,
-        origin: item.origin,
-        destination: item.destination,
-        departureDate: item.departure_date,
-        returnDate: item.return_date,
-        departure_date: item.departure_date,
-        return_date: item.return_date,
-        passengers: item.passengers,
-        created_at: item.created_at
-      }));
+      const formattedLeads: Lead[] = (data || []).map(item => {
+        const passengersData = typeof item.passengers === 'string' 
+          ? JSON.parse(item.passengers) 
+          : item.passengers;
+          
+        return {
+          id: item.id,
+          email: item.email,
+          phone: item.phone,
+          origin: item.origin,
+          destination: item.destination,
+          departureDate: item.departure_date,
+          returnDate: item.return_date,
+          departure_date: item.departure_date,
+          return_date: item.return_date,
+          passengers: {
+            adults: passengersData.adults || 0,
+            children: passengersData.children || 0,
+            ages: passengersData.ages || [],
+            count: passengersData.count
+          },
+          created_at: item.created_at
+        };
+      });
 
       setLeads(formattedLeads);
     } catch (error) {

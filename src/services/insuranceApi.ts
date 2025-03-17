@@ -1,6 +1,6 @@
 
 import { toast } from "sonner";
-import { InsuranceOffer, InsuranceProvider, SearchParams, Lead } from "./api/types";
+import { InsuranceOffer, InsuranceProvider, SearchParams, Lead, Json } from "./api/types";
 import { configureInsuranceAPI, getApiConfig } from "./api/config";
 import { parseSearchParams } from "./api/utils";
 import { fetchUniversalAssistanceOffers } from "./api/providers/universalAssistance";
@@ -188,19 +188,31 @@ export const getLeads = async (): Promise<Lead[]> => {
     }
 
     // Converter do formato do banco para o formato do frontend
-    const leads: Lead[] = (data || []).map(item => ({
-      id: item.id,
-      email: item.email,
-      phone: item.phone,
-      origin: item.origin,
-      destination: item.destination,
-      departureDate: item.departure_date,
-      returnDate: item.return_date,
-      departure_date: item.departure_date,
-      return_date: item.return_date,
-      passengers: item.passengers,
-      created_at: item.created_at
-    }));
+    const leads: Lead[] = (data || []).map(item => {
+      // Garantir que passengers é um objeto com o formato correto
+      const passengersData = typeof item.passengers === 'string' 
+        ? JSON.parse(item.passengers) 
+        : item.passengers;
+        
+      return {
+        id: item.id,
+        email: item.email,
+        phone: item.phone,
+        origin: item.origin,
+        destination: item.destination,
+        departureDate: item.departure_date,
+        returnDate: item.return_date,
+        departure_date: item.departure_date,
+        return_date: item.return_date,
+        passengers: {
+          adults: passengersData.adults || 0,
+          children: passengersData.children || 0,
+          ages: passengersData.ages || [],
+          count: passengersData.count
+        },
+        created_at: item.created_at
+      };
+    });
 
     return leads;
   } catch (error) {
