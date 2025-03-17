@@ -61,7 +61,7 @@ const UniversalAssistanceForm = ({
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="username">Credencial Login</Label>
+        <Label htmlFor="username">Credencial de Login</Label>
         <Input
           id="username"
           placeholder="Credencial de Login fornecida pela Universal Assistance"
@@ -70,12 +70,12 @@ const UniversalAssistanceForm = ({
           required
         />
         <p className="text-xs text-muted-foreground mt-1">
-          Deve ser enviado no header como "Login"
+          Deve ser enviado no header como <strong>"Login"</strong>
         </p>
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="password">Credencial Senha</Label>
+        <Label htmlFor="password">Credencial de Senha</Label>
         <Input
           id="password"
           type="password"
@@ -85,7 +85,7 @@ const UniversalAssistanceForm = ({
           required
         />
         <p className="text-xs text-muted-foreground mt-1">
-          Deve ser enviado no header como "Senha"
+          Deve ser enviado no header como <strong>"Senha"</strong>
         </p>
       </div>
 
@@ -157,6 +157,7 @@ const UniversalAssistanceForm = ({
           <ul className="text-xs mt-1 list-disc pl-4">
             <li>Verifique se as credenciais estão corretas</li>
             <li>Confirme que a URL base está correta</li> 
+            <li>As credenciais devem ser enviadas nos headers como <strong>"Login"</strong> e <strong>"Senha"</strong></li>
             <li>Ative a opção "Usar Proxy CORS" para resolver problemas de CORS</li>
             <li>Utilize o proxy <strong>allorigins.win</strong> para melhores resultados</li>
             <li>Se o proxy atual não funcionar, selecione outro serviço de proxy</li>

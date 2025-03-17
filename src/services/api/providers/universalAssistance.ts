@@ -2,11 +2,11 @@
 import { toast } from "sonner";
 import { getApiConfig } from "../config";
 import { InsuranceOffer, SearchParams } from "../types";
-import { supabase } from "@/integrations/supabase/client";
 import { 
   getQuote, 
   prepareQuotePayload, 
-  testConnection
+  testConnection,
+  getProductBenefits
 } from "./universalAssistance/api";
 import { 
   processPlans, 
@@ -28,64 +28,50 @@ export const fetchUniversalAssistanceOffers = async (params: SearchParams): Prom
     const cotacaoPayload = prepareQuotePayload(params);
     console.log("Payload de cotação:", cotacaoPayload);
     
-    // Função para processar a resposta da API
-    const processApiResponse = async (data: UniversalQuoteResponse): Promise<InsuranceOffer[]> => {
-      if (!data) return [];
-      
-      // Extrair os produtos/planos
-      let products = [];
-      if (data.produtos) {
-        products = data.produtos;
-      } else if (data.planos) {
-        products = data.planos;
-      }
-      
-      if (products.length > 0) {
-        console.log(`Produtos encontrados (${products.length}):`, products);
-        return await processPlans(products);
-      }
-      
-      return [];
-    };
-    
-    // Tentativa com Edge Function do Supabase
-    if (apiConfig.useSupabase) {
-      console.log("Tentando cotação via Edge Function do Supabase");
-      try {
-        const { data: edgeFunctionData, error } = await supabase.functions.invoke('universal-assist/cotacao', {
-          body: {
-            credentials: {
-              login: apiConfig.providerSettings.username,
-              senha: apiConfig.providerSettings.password
-            },
-            payload: cotacaoPayload
-          }
-        });
-        
-        if (error) {
-          console.error("Erro na Edge Function:", error);
-        } else if (edgeFunctionData && edgeFunctionData.success && edgeFunctionData.data) {
-          console.log("Dados obtidos via Edge Function:", edgeFunctionData);
-          const offers = await processApiResponse(edgeFunctionData.data);
-          if (offers.length > 0) {
-            return offers;
-          }
-        }
-      } catch (edgeFunctionError) {
-        console.error("Erro ao chamar Edge Function:", edgeFunctionError);
-      }
-    }
-    
     // Tentativa direta usando a API
     try {
-      console.log("Tentando cotação direta com a API");
+      console.log("Realizando cotação direta com a API");
       const quoteData = await getQuote(cotacaoPayload);
       console.log("Resposta da cotação:", quoteData);
       
-      const offers = await processApiResponse(quoteData);
-      if (offers.length > 0) {
-        return offers;
+      // Processar a resposta da API
+      if (!quoteData) return generateMockOffers(5);
+      
+      // Extrair os produtos/planos
+      let products = [];
+      if (quoteData.produtos) {
+        products = quoteData.produtos;
+      } else if (quoteData.planos) {
+        products = quoteData.planos;
       }
+      
+      if (products && products.length > 0) {
+        console.log(`Produtos encontrados (${products.length}):`, products);
+        
+        // Para cada produto, tentar buscar os benefícios específicos
+        for (const product of products) {
+          try {
+            if (product.id) {
+              const benefits = await getProductBenefits(product.id);
+              if (benefits && benefits.length > 0) {
+                product.beneficios = benefits;
+              }
+            }
+          } catch (benefitError) {
+            console.error(`Erro ao buscar benefícios do produto ${product.id}:`, benefitError);
+          }
+        }
+        
+        return await processPlans(products);
+      }
+      
+      // Se não encontrar produtos, exibir mensagem e usar dados mockados
+      toast.warning("Nenhum produto encontrado na resposta da API", { 
+        description: "Exibindo dados de exemplo",
+        duration: 8000
+      });
+      
+      return generateMockOffers(5);
     } catch (apiError) {
       console.error("Erro na API de cotação:", apiError);
       
@@ -102,16 +88,10 @@ export const fetchUniversalAssistanceOffers = async (params: SearchParams): Prom
           duration: 5000
         });
       }
+      
+      // Se a tentativa falhar, retornamos dados mockados
+      return generateMockOffers(5);
     }
-    
-    // Se todas as tentativas falharam, exibimos um erro e retornamos dados mockados
-    console.warn("Todas as tentativas de obter cotação falharam. Usando dados mockados.");
-    toast.error("Não foi possível obter cotações da Universal Assistance", {
-      description: "Exibindo dados de exemplo",
-      duration: 8000
-    });
-    
-    return generateMockOffers(5);
   } catch (error) {
     console.error("Erro ao buscar dados da Universal Assistance:", error);
     toast.error("Erro ao conectar com a API da Universal Assistance", {

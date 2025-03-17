@@ -1,6 +1,6 @@
 
 import { toast } from "sonner";
-import { InsuranceOffer, InsuranceProvider, SearchParams, Lead, Json } from "./api/types";
+import { InsuranceOffer, InsuranceProvider, SearchParams, Lead } from "./api/types";
 import { configureInsuranceAPI, getApiConfig } from "./api/config";
 import { parseSearchParams } from "./api/utils";
 import { fetchUniversalAssistanceOffers } from "./api/providers/universalAssistance";
@@ -51,38 +51,6 @@ export const searchInsurances = async (params: SearchParams): Promise<InsuranceO
       console.log("Usando API da Universal Assistance para busca de seguros");
       
       try {
-        // Primeiro, tenta usar a edge function do Supabase
-        try {
-          console.log("Tentando usar a Edge Function do Supabase");
-          const { data, error } = await supabase.functions.invoke('universal-assist/search', {
-            body: params
-          });
-          
-          if (error) {
-            console.error("Erro na Edge Function:", error);
-            toast.error("Erro ao usar a Edge Function do Supabase", {
-              description: error.message
-            });
-            // Continuar e tentar o método tradicional
-          } else if (data && data.success) {
-            console.log("Dados obtidos com sucesso via Edge Function:", data);
-            return data.offers;
-          } else if (data && !data.success && data.mockData) {
-            console.log("Usando dados mockados da Edge Function");
-            toast.warning("Usando dados simulados da API via Supabase", {
-              description: data.error || "A conexão com a API falhou"
-            });
-            return data.mockData;
-          }
-        } catch (edgeFunctionError) {
-          console.error("Erro ao chamar Edge Function:", edgeFunctionError);
-          toast.error("Falha ao usar Edge Function Supabase", {
-            description: "Tentando método alternativo..."
-          });
-          // Continuar e tentar o método tradicional
-        }
-        
-        // Se a Edge Function falhar, tenta o método tradicional
         const offers = await fetchUniversalAssistanceOffers(params);
         console.log(`${offers.length} ofertas encontradas`);
         return offers;
@@ -92,7 +60,7 @@ export const searchInsurances = async (params: SearchParams): Promise<InsuranceO
         // Verifica se o erro está relacionado a CORS e o proxy não está ativado
         if (!apiConfig.useProxy && error instanceof Error && 
             (error.message.includes('CORS') || error.message.includes('Failed to fetch'))) {
-          toast.error("Erro de CORS detectado. Considere ativar a opção de proxy nas configurações da API ou usar o Supabase.", {
+          toast.error("Erro de CORS detectado. Considere ativar a opção de proxy nas configurações da API.", {
             duration: 8000
           });
         } else {
