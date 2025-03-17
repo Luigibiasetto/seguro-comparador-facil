@@ -81,15 +81,16 @@ const InsuranceOfferCard = ({
                 </div>
               </div>
               <div className="flex flex-wrap gap-2 mt-3">
-                {offer.benefits.slice(0, 3).map(benefit => (
-                  <div key={benefit} className="bg-muted px-2 py-1 rounded-md text-xs flex items-center">
+                {/* Fazemos a deduplicação de benefícios e usamos o índice como parte da key */}
+                {Array.from(new Set(offer.benefits)).slice(0, 3).map((benefit, index) => (
+                  <div key={`${benefit}-${index}`} className="bg-muted px-2 py-1 rounded-md text-xs flex items-center">
                     <Check className="w-3 h-3 mr-1 text-green-500" />
                     {benefit}
                   </div>
                 ))}
                 {offer.benefits.length > 3 && (
                   <div className="bg-muted px-2 py-1 rounded-md text-xs">
-                    +{offer.benefits.length - 3} benefícios
+                    +{Array.from(new Set(offer.benefits)).length - 3} benefícios
                   </div>
                 )}
               </div>
@@ -156,8 +157,9 @@ const InsuranceOfferCard = ({
               <div>
                 <h4 className="font-medium mb-3">Benefícios</h4>
                 <div className="grid grid-cols-1 gap-2">
-                  {offer.benefits.map(benefit => (
-                    <div key={benefit} className="flex items-center gap-2">
+                  {/* Use de Set para remover duplicatas e adicione índice na key */}
+                  {Array.from(new Set(offer.benefits)).map((benefit, index) => (
+                    <div key={`${benefit}-${index}`} className="flex items-center gap-2">
                       <Check className="text-green-500 w-4 h-4" />
                       <span>{benefit}</span>
                     </div>
