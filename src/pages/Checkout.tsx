@@ -19,6 +19,7 @@ import CheckoutSummary from '@/components/checkout/CheckoutSummary';
 import CustomerForm from '@/components/checkout/CustomerForm';
 import PaymentForm from '@/components/checkout/PaymentForm';
 import { supabase } from '@/integrations/supabase/client';
+import { saveAbandonedCart } from '@/services/abandonedCartService';
 
 const Checkout = () => {
   const navigate = useNavigate();
@@ -63,10 +64,28 @@ const Checkout = () => {
       setIsAuthenticated(!!session);
     });
     
+    // Adicionar evento de beforeunload para capturar quando o usuário tenta sair da página
+    const handleBeforeUnload = () => {
+      if (storedParams && (customerInfo || activeTab === 'payment')) {
+        // Salvar carrinho abandonado de maneira assíncrona
+        saveAbandonedCart(storedParams, customerInfo, storedOffer, storedProvider)
+          .catch(err => console.error('Erro ao salvar carrinho abandonado:', err));
+      }
+    };
+    
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    
     return () => {
       authListener.subscription.unsubscribe();
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      
+      // Ao desmontar o componente, tenta salvar o carrinho abandonado se houver dados
+      if (storedParams && (customerInfo || activeTab === 'payment')) {
+        saveAbandonedCart(storedParams, customerInfo, storedOffer, storedProvider)
+          .catch(err => console.error('Erro ao salvar carrinho abandonado:', err));
+      }
     };
-  }, [navigate]);
+  }, [navigate, customerInfo, activeTab]);
   
   const formatPrice = (price: number) => {
     return price.toLocaleString('pt-BR', {
@@ -78,6 +97,12 @@ const Checkout = () => {
   const handleCustomerSubmit = (data: CustomerInfo) => {
     setCustomerInfo(data);
     setActiveTab('payment');
+    
+    // Salvar carrinho abandonado quando o usuário avança para o pagamento
+    if (searchParams && offer && provider) {
+      saveAbandonedCart(searchParams, data, offer, provider)
+        .catch(err => console.error('Erro ao salvar progresso do checkout:', err));
+    }
   };
   
   const handlePaymentSubmit = async (paymentMethod: 'pix' | 'creditCard', creditCardInfo?: any) => {

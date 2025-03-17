@@ -131,5 +131,28 @@ export interface UserProfile {
   created_at?: string;
 }
 
+// Interface para carrinhos abandonados
+export interface AbandonedCart {
+  id?: string;
+  user_id?: string;
+  email: string;
+  phone: string;
+  origin: string;
+  destination: string;
+  departure_date: string;
+  return_date: string;
+  passengers: {
+    adults: number;
+    children: number;
+    ages: number[];
+    count?: number;
+  };
+  customer_info?: CustomerInfo;
+  offer_data?: InsuranceOffer;
+  provider_data?: InsuranceProvider;
+  created_at?: string;
+  recovered: boolean;
+}
+
 // Helper type for Supabase Json fields
 export type Json = any;
