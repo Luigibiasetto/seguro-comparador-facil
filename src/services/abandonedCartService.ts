@@ -110,7 +110,28 @@ export const getAbandonedCarts = async (): Promise<AbandonedCart[]> => {
       return [];
     }
 
-    return data || [];
+    // Transformar os dados do Supabase para o formato esperado pelo frontend
+    const formattedData: AbandonedCart[] = data.map((item: any) => ({
+      id: item.id,
+      user_id: item.user_id,
+      email: item.email,
+      phone: item.phone,
+      origin: item.origin,
+      destination: item.destination,
+      departure_date: item.departure_date,
+      return_date: item.return_date,
+      passengers: typeof item.passengers === 'string' 
+        ? JSON.parse(item.passengers) 
+        : item.passengers,
+      customer_info: item.customer_info,
+      offer_data: item.offer_data,
+      provider_data: item.provider_data,
+      created_at: item.created_at,
+      updated_at: item.updated_at,
+      recovered: item.recovered
+    }));
+
+    return formattedData;
   } catch (error) {
     console.error("Erro inesperado:", error);
     toast.error("Erro ao carregar dados");
