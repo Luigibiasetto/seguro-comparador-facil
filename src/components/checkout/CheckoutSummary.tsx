@@ -23,6 +23,12 @@ const CheckoutSummary: React.FC<CheckoutSummaryProps> = ({
     return format(date, "dd 'de' MMMM 'de' yyyy", { locale: ptBR });
   };
 
+  // Calculate total passengers count from adults and children
+  const passengersCount = 
+    searchParams.passengers.count !== undefined
+      ? searchParams.passengers.count
+      : searchParams.passengers.adults + searchParams.passengers.children;
+
   return (
     <Card>
       <CardHeader>
@@ -53,7 +59,7 @@ const CheckoutSummary: React.FC<CheckoutSummaryProps> = ({
           </div>
           <div className="flex justify-between">
             <span>Passageiros:</span>
-            <span className="font-medium">{searchParams.passengers.count}</span>
+            <span className="font-medium">{passengersCount}</span>
           </div>
         </div>
         

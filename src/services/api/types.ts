@@ -26,7 +26,9 @@ export interface SearchParams {
     adults: number;
     children: number;
     ages: number[];
+    count?: number; // Added for backward compatibility
   };
+  phone?: string; // Added phone property
 }
 
 // Tipo para uma oferta de seguro
@@ -40,6 +42,7 @@ export interface InsuranceOffer {
     baggage: number;
     cancellation: number;
     delay: number;
+    other?: any; // Added other property that may be used
   };
   benefits: string[];
   rating: number;
@@ -51,4 +54,27 @@ export interface InsuranceProvider {
   id: string;
   name: string;
   logo: string;
+}
+
+// Customer Information type for checkout
+export interface CustomerInfo {
+  documentType: "cpf" | "passport";
+  documentNumber: string;
+  fullName: string;
+  birthDate: string;
+  email: string;
+  phone: string;
+  emergencyContact: {
+    name: string;
+    phone: string;
+  };
+  address: {
+    zipCode: string;
+    street: string;
+    number: string;
+    complement?: string;
+    city: string;
+    state: string;
+    country: string;
+  };
 }

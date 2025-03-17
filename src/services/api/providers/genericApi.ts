@@ -22,7 +22,7 @@ export const fetchGenericInsuranceOffers = async (params: SearchParams): Promise
       departureDate: params.departureDate,
       returnDate: params.returnDate,
       passengers: params.passengers,
-      phone: params.phone || ""
+      phone: params.phone || "" // Use phone if available or empty string as fallback
     };
     
     // Make the request to the API
