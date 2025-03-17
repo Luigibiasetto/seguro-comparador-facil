@@ -21,11 +21,13 @@ export const fetchUniversalAssistanceOffers = async (params: SearchParams): Prom
       console.log("URL do proxy:", apiConfig.proxyUrl);
     }
 
-    // Configurar headers padrão atualizados para todas as requisições
+    // Configurar headers com as credenciais conforme documentação
     const headers = {
       ...(apiConfig.headers || {}),
       'Content-Type': 'application/json',
       'Accept': 'application/json',
+      'Login': apiConfig.providerSettings.username,  // Usar "Login" conforme documentação
+      'Senha': apiConfig.providerSettings.password,  // Usar "Senha" conforme documentação
       'Origin': window.location.origin,
       'X-Requested-With': 'XMLHttpRequest',
       'Access-Control-Allow-Origin': '*',
@@ -37,238 +39,131 @@ export const fetchUniversalAssistanceOffers = async (params: SearchParams): Prom
     console.log("Headers configurados:", headers);
     console.log("URL de origem:", window.location.origin);
 
-    // Usar tryWithMultipleProxies para tentar com vários proxies se falhar
-    let token = null;
-    if (apiConfig.useProxy) {
-      try {
-        token = await tryWithMultipleProxies(async (proxyUrl) => {
-          return await authenticateUser(headers, proxyUrl);
-        });
-      } catch (error) {
-        console.error("Todas as tentativas de autenticação com proxy falharam:", error);
-        token = "mock-token-for-testing";
-      }
-    } else {
-      // Tentativa sem proxy
-      try {
-        token = await authenticateUser(headers);
-      } catch (error) {
-        console.error("Falha na autenticação sem proxy:", error);
-        token = "mock-token-for-testing";
-      }
-    }
-
-    if (token === "mock-token-for-testing") {
-      console.warn("Usando token mockado. A autenticação real falhou.");
-      toast.warning("Usando dados simulados. A conexão com a API da Universal Assistance falhou.", {
-        duration: 8000
-      });
-    } else {
-      console.log("Autenticação bem sucedida. Token obtido.");
-    }
-    
-    // Preparar parâmetros de busca
-    const tripDuration = calculateTripDuration(params.departureDate, params.returnDate);
+    // Preparar parâmetros de busca com o formato correto conforme documentação
     const departureFormatted = new Date(params.departureDate).toISOString().split('T')[0];
     const returnFormatted = new Date(params.returnDate).toISOString().split('T')[0];
+    const tripDuration = calculateTripDuration(params.departureDate, params.returnDate);
     
-    // Acrescentar token aos headers para a busca
-    const searchAuthHeaders = {
-      ...headers,
-      'Authorization': `Bearer ${token}`
+    // Converter idades dos passageiros para o formato esperado pela API
+    const passageiros = params.passengers.ages.map(age => {
+      return {
+        nome: `Passageiro ${age} anos`,
+        dataNascimento: calculateBirthDate(age)
+      };
+    });
+    
+    // Payload conforme documentação
+    const cotacaoPayload = {
+      destinos: [getDestinationCode(params.destination)],
+      passageiros: passageiros,
+      dataSaida: departureFormatted,
+      dataRetorno: returnFormatted,
+      tipoViagem: 1, // Internacional
+      tipoTarifa: 1, // Folheto
+      produtoAvulso: false,
+      cupom: "",
+      classificacoes: [1] // Default, pode ser ajustado
     };
     
-    // Endpoints e payloads para a busca de planos
-    const endpoints = [
-      '/plans/search',
-      '/plans',
-      '/offers/search',
-      '/offers'
-    ];
+    console.log("Payload de cotação:", cotacaoPayload);
     
-    const searchPayloads = [
-      {
-        origin: params.origin,
-        destination: params.destination,
-        departure_date: departureFormatted,
-        return_date: returnFormatted,
-        trip_duration: tripDuration,
-        passengers: params.passengers.ages.map(age => ({ age }))
-      },
-      {
-        origin: params.origin,
-        destination: params.destination,
-        departureDate: departureFormatted,
-        returnDate: returnFormatted,
-        tripDuration: tripDuration,
-        travelers: params.passengers.ages
-      }
-    ];
-    
-    // Tentar buscar planos
-    let plansFound = false;
-    let foundPlans = [];
-    
-    // Função para tentar buscar com um proxy específico
-    const tryFetchWithProxy = async (endpoint: string, payload: any, proxyUrl?: string) => {
-      const searchUrl = getApiUrl(endpoint, proxyUrl);
-      console.log(`Tentando buscar em: ${searchUrl}`);
-      console.log("Payload:", JSON.stringify(payload));
+    // Função para fazer a chamada à API
+    const fetchPlans = async (proxyUrl?: string) => {
+      const cotacaoUrl = getApiUrl('/Cotacao', proxyUrl);
+      console.log(`Tentando buscar cotação em: ${cotacaoUrl}`);
       
       try {
-        const searchResponse = await fetch(searchUrl, {
+        const response = await fetch(cotacaoUrl, {
           method: 'POST',
-          headers: searchAuthHeaders,
-          body: JSON.stringify(payload),
+          headers: headers,
+          body: JSON.stringify(cotacaoPayload),
           mode: 'cors'
         });
         
-        if (searchResponse.ok) {
-          const searchData = await searchResponse.json();
-          console.log("Dados obtidos:", searchData);
-          
-          let plans = [];
-          if (Array.isArray(searchData)) {
-            plans = searchData;
-          } else if (searchData.plans) {
-            plans = searchData.plans;
-          } else if (searchData.data) {
-            plans = searchData.data;
-          } else if (searchData.offers) {
-            plans = searchData.offers;
-          } else if (searchData.results) {
-            plans = searchData.results;
-          }
-          
-          if (plans && plans.length > 0) {
-            plansFound = true;
-            foundPlans = plans;
-            return true;
-          }
-        } else {
-          const status = searchResponse.status;
-          console.warn(`Falha na busca: ${status}`);
-          
-          // Registro mais detalhado para códigos comuns
-          if (status === 401 || status === 403) {
-            console.log("Erro de autorização. O token pode não ser válido.");
-          } else if (status === 404) {
-            console.log("Endpoint não encontrado. Verifique a URL base.");
-          } else if (status === 500) {
-            console.log("Erro interno do servidor. A API pode estar com problemas.");
-          }
-          
-          try {
-            const errorText = await searchResponse.text();
-            console.log("Detalhes do erro:", errorText);
-          } catch (e) {
-            console.log("Não foi possível obter detalhes do erro");
-          }
+        if (!response.ok) {
+          console.warn(`Falha na cotação: ${response.status}`);
+          const errorText = await response.text();
+          console.log("Detalhes do erro:", errorText);
+          return null;
         }
-      } catch (fetchError) {
-        console.warn(`Erro de rede ao buscar ${endpoint}:`, fetchError);
-        if (apiConfig.debugMode) {
-          toast.error(`Erro ao buscar em ${endpoint}`, {
-            description: `${fetchError}`,
-            duration: 5000
-          });
-        }
-      }
-      
-      return false;
-    };
-    
-    // Tentar cada combinação de endpoint e payload
-    if (apiConfig.useProxy) {
-      // Com proxy
-      for (const endpoint of endpoints) {
-        for (const payload of searchPayloads) {
-          try {
-            const success = await tryWithMultipleProxies(async (proxyUrl) => {
-              return await tryFetchWithProxy(endpoint, payload, proxyUrl);
-            });
-            
-            if (success && plansFound) {
-              console.log(`Encontrados ${foundPlans.length} planos.`);
-              return processPlans(foundPlans);
-            }
-          } catch (searchError) {
-            console.warn(`Erro na requisição para ${endpoint}:`, searchError);
-          }
-        }
-      }
-    } else {
-      // Sem proxy
-      for (const endpoint of endpoints) {
-        for (const payload of searchPayloads) {
-          try {
-            const success = await tryFetchWithProxy(endpoint, payload);
-            if (success && plansFound) {
-              console.log(`Encontrados ${foundPlans.length} planos.`);
-              return processPlans(foundPlans);
-            }
-          } catch (searchError) {
-            console.warn(`Erro na requisição para ${endpoint}:`, searchError);
-          }
-        }
-      }
-    }
-    
-    // Última tentativa: acesso direto sem payload
-    try {
-      console.log("Tentando última alternativa: acesso direto aos planos");
-      
-      const tryDirectAccess = async (proxyUrl?: string) => {
-        const plansUrl = getApiUrl('/plans', proxyUrl);
-        console.log(`Tentando acessar planos diretamente em: ${plansUrl}`);
         
-        try {
-          const plansResponse = await fetch(plansUrl, {
-            method: 'GET',
-            headers: searchAuthHeaders,
-            mode: 'cors'
-          });
-          
-          if (plansResponse.ok) {
-            const plansData = await plansResponse.json();
-            console.log("Planos obtidos diretamente:", plansData);
-            
-            let plans = [];
-            if (Array.isArray(plansData)) {
-              plans = plansData;
-            } else if (plansData.plans) {
-              plans = plansData.plans;
-            } else if (plansData.data) {
-              plans = plansData.data;
-            }
-            
-            if (plans && plans.length > 0) {
-              return plans;
-            }
-          } else {
-            console.warn(`Acesso direto falhou: ${plansResponse.status}`);
-          }
-        } catch (directError) {
-          console.warn("Erro ao acessar planos diretamente:", directError);
+        const data = await response.json();
+        console.log("Dados obtidos:", data);
+        
+        if (data && (data.produtos || data.planos)) {
+          // Processar os planos retornados
+          const products = data.produtos || data.planos || [];
+          return processPlans(products);
         }
         
         return null;
-      };
-      
-      let directPlans = null;
-      if (apiConfig.useProxy) {
-        directPlans = await tryWithMultipleProxies(tryDirectAccess);
-      } else {
-        directPlans = await tryDirectAccess();
+      } catch (error) {
+        console.warn("Erro ao buscar cotação:", error);
+        if (apiConfig.debugMode) {
+          toast.error("Erro ao buscar cotação", {
+            description: `${error}`,
+            duration: 5000
+          });
+        }
+        return null;
       }
-      
-      if (directPlans) {
-        return processPlans(directPlans);
+    };
+    
+    // Tentativa com proxy se configurado, ou diretamente
+    let plans = null;
+    
+    if (apiConfig.useProxy) {
+      // Com proxy
+      try {
+        plans = await tryWithMultipleProxies(fetchPlans);
+      } catch (proxyError) {
+        console.error("Todas as tentativas com proxy falharam:", proxyError);
       }
-    } catch (plansError) {
-      console.warn("Erro ao acessar planos diretamente:", plansError);
+    } else {
+      // Sem proxy
+      try {
+        plans = await fetchPlans();
+      } catch (directError) {
+        console.error("Tentativa direta falhou:", directError);
+      }
     }
     
+    // Se encontrou planos, retorna eles
+    if (plans && plans.length > 0) {
+      console.log(`Encontrados ${plans.length} planos.`);
+      return plans;
+    }
+    
+    // Tentativa via Edge Function do Supabase
+    if (apiConfig.useSupabase) {
+      console.log("Tentando cotação via Edge Function do Supabase");
+      try {
+        const { data: edgeFunctionData, error } = await fetch("/api/universal-assist/cotacao", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            credentials: {
+              login: apiConfig.providerSettings.username,
+              senha: apiConfig.providerSettings.password
+            },
+            payload: cotacaoPayload
+          }),
+        }).then(res => res.json());
+        
+        if (error) {
+          console.error("Erro na Edge Function:", error);
+        } else if (edgeFunctionData && edgeFunctionData.success && edgeFunctionData.offers) {
+          console.log("Dados obtidos via Edge Function:", edgeFunctionData);
+          return edgeFunctionData.offers;
+        }
+      } catch (edgeFunctionError) {
+        console.error("Erro ao chamar Edge Function:", edgeFunctionError);
+      }
+    }
+    
+    // Se chegou aqui, todas as tentativas falharam
     console.warn("Todas as tentativas de conexão falharam. Usando dados mockados.");
     
     // Mensagens de erro específicas baseadas na configuração
@@ -315,135 +210,88 @@ export const fetchUniversalAssistanceOffers = async (params: SearchParams): Prom
   }
 };
 
-// Função auxiliar para autenticação
-const authenticateUser = async (headers: Record<string, string>, proxyUrl?: string): Promise<string> => {
-  const apiConfig = getApiConfig();
-  
-  // Realizar autenticação via Basic Auth
-  const username = apiConfig.providerSettings!.username!;
-  const password = apiConfig.providerSettings!.password!;
-  
-  console.log("Tentando autenticação com Basic Auth:", { username });
-  const basicAuth = btoa(`${username}:${password}`);
-  const authHeaders = {
-    ...headers,
-    'Authorization': `Basic ${basicAuth}`
-  };
+// Função auxiliar para calcular data de nascimento baseada na idade
+function calculateBirthDate(age: number): string {
+  const today = new Date();
+  const birthYear = today.getFullYear() - age;
+  return `${birthYear}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+}
 
-  // Tentar diversos endpoints de autenticação
-  const authEndpoints = [
-    '/auth/token',
-    '/auth',
-    '/token',
-    '/login'
-  ];
+// Função para converter o destino em código conforme esperado pela API
+function getDestinationCode(destination: string): string {
+  // Mapeamento de destinos para códigos
+  const destinationMap: Record<string, string> = {
+    "NAMERICA": "NA", // América do Norte
+    "SAMERICA": "SA", // América do Sul
+    "EUROPE": "EU",   // Europa
+    "ASIA": "AS",     // Ásia
+    "AFRICA": "AF",   // África
+    "OCEANIA": "OC",  // Oceania
+    "BR": "BR"        // Brasil
+  };
   
-  let token = null;
-  
-  for (const endpoint of authEndpoints) {
-    try {
-      const authUrl = getApiUrl(endpoint, proxyUrl);
-      console.log(`Tentando autenticação em: ${authUrl}`);
-      
-      const authResponse = await fetch(authUrl, {
-        method: 'POST',
-        headers: authHeaders,
-        mode: 'cors'
-      });
-      
-      if (authResponse.ok) {
-        console.log("Resposta de autenticação:", authResponse);
-        console.log("Status:", authResponse.status);
-        
-        try {
-          const responseData = await authResponse.json();
-          console.log("Dados de autenticação:", responseData);
-          
-          // Extrair token de diferentes formatos de resposta
-          token = responseData.token || 
-                  responseData.access_token || 
-                  responseData.accessToken || 
-                  (responseData.data && responseData.data.token);
-                  
-          if (token) {
-            console.log("Token obtido:", token);
-            return token;
-          }
-        } catch (jsonError) {
-          console.warn("Erro ao processar JSON:", jsonError);
-          const textResponse = await authResponse.text();
-          console.log("Resposta como texto:", textResponse);
-          if (textResponse && /^[A-Za-z0-9-_=]+\.[A-Za-z0-9-_=]+\.?[A-Za-z0-9-_.+/=]*$/.test(textResponse)) {
-            token = textResponse;
-            console.log("Token extraído do texto:", token);
-            return token;
-          }
-        }
-      } else {
-        console.warn(`Falha na autenticação em ${endpoint}: ${authResponse.status}`);
-      }
-    } catch (error) {
-      console.warn(`Erro ao tentar autenticação em ${endpoint}:`, error);
-    }
-  }
-  
-  // Se chegou aqui, nenhuma tentativa de autenticação teve sucesso
-  throw new Error("Não foi possível autenticar com nenhum dos endpoints");
-};
+  return destinationMap[destination] || destination;
+}
 
 // Helper function to process API plans into the app's format
-const processPlans = (plans: any[]): InsuranceOffer[] => {
-  return plans.map((plan: any, index: number) => ({
-    id: plan.id || `universal-${Math.random().toString(36).substring(2, 9)}`,
+const processPlans = (products: any[]): InsuranceOffer[] => {
+  return products.map((product: any, index: number) => ({
+    id: product.id || product.codigo || `universal-${Math.random().toString(36).substring(2, 9)}`,
     providerId: "universal-assist",
-    name: plan.name || plan.title || `Plano Universal ${index + 1}`,
-    price: parseFloat(plan.price || plan.total || "0") || Math.floor(Math.random() * 300) + 100,
+    name: product.nome || product.descricao || `Plano Universal ${index + 1}`,
+    price: parseFloat(product.preco || product.valorBruto || "0") || Math.floor(Math.random() * 300) + 100,
     coverage: {
-      medical: extractCoverage(plan, 'medical', 40000),
-      baggage: extractCoverage(plan, 'baggage', 1000),
-      cancellation: extractCoverage(plan, 'cancellation', 2000),
-      delay: extractCoverage(plan, 'delay', 200),
+      medical: extractCoverage(product, 'medical', 40000),
+      baggage: extractCoverage(product, 'baggage', 1000),
+      cancellation: extractCoverage(product, 'cancellation', 2000),
+      delay: extractCoverage(product, 'delay', 200),
     },
-    benefits: extractBenefits(plan),
-    rating: plan.rating || (4 + Math.random()),
+    benefits: extractBenefits(product),
+    rating: 4.5 + (Math.random() * 0.5),
     recommended: index === 0,
   }));
 };
 
 // Helper function to extract coverage values
-const extractCoverage = (plan: any, type: string, defaultValue: number): number => {
-  if (plan.coverages?.[type]) return plan.coverages[type];
-  if (plan[`${type}_coverage`]) return plan[`${type}_coverage`];
-  if (plan.coverage?.[type]) return plan.coverage[type];
+const extractCoverage = (product: any, type: string, defaultValue: number): number => {
+  // Tentar extrair cobertura dos diferentes formatos possíveis de resposta
+  if (product.coberturas) {
+    const cobertura = Array.isArray(product.coberturas)
+      ? product.coberturas.find((c: any) => 
+          c.tipo?.toLowerCase() === type || 
+          c.nome?.toLowerCase().includes(type))
+      : product.coberturas[type];
+      
+    if (cobertura) {
+      return parseFloat(cobertura.valor || cobertura.valorCoberto || "0") || defaultValue;
+    }
+  }
   
-  if (Array.isArray(plan.coverages)) {
-    const found = plan.coverages.find((c: any) => 
-      c.type === type || c.name?.toLowerCase().includes(type)
-    );
-    if (found) return found.value || found.amount || defaultValue;
+  // Verificar estruturas alternativas
+  if (product[`cobertura${type.charAt(0).toUpperCase() + type.slice(1)}`]) {
+    return parseFloat(product[`cobertura${type.charAt(0).toUpperCase() + type.slice(1)}`]) || defaultValue;
   }
   
   return defaultValue;
 };
 
 // Helper function to extract benefits
-const extractBenefits = (plan: any): string[] => {
-  if (Array.isArray(plan.benefits) && typeof plan.benefits[0] === 'string') {
-    return plan.benefits;
-  }
-  
-  if (Array.isArray(plan.benefits) && typeof plan.benefits[0] === 'object') {
-    return plan.benefits.map((b: any) => b.name || b.title || b.description || "Benefício");
-  }
-  
-  if (Array.isArray(plan.features)) {
-    return plan.features.map((f: any) => {
-      if (typeof f === 'string') return f;
-      return f.name || f.title || f.description || "Recurso";
+const extractBenefits = (product: any): string[] => {
+  if (product.beneficios && Array.isArray(product.beneficios)) {
+    return product.beneficios.map((b: any) => {
+      if (typeof b === 'string') return b;
+      return b.nome || b.descricao || "Benefício";
     });
   }
   
-  return ["COVID-19", "Telemedicina", "Traslado médico"];
+  if (product.caracteristicas && Array.isArray(product.caracteristicas)) {
+    return product.caracteristicas.map((c: any) => {
+      if (typeof c === 'string') return c;
+      return c.nome || c.descricao || "Característica";
+    });
+  }
+  
+  return ["COVID-19", "Telemedicina", "Assistência 24h", "Traslado médico"];
 };
 
 // Função para gerar ofertas mockadas

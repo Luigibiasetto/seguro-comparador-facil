@@ -61,26 +61,32 @@ const UniversalAssistanceForm = ({
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="username">Nome de usuário</Label>
+        <Label htmlFor="username">Credencial Login</Label>
         <Input
           id="username"
-          placeholder="Usuário fornecido pela Universal Assistance"
+          placeholder="Credencial de Login fornecida pela Universal Assistance"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
           required
         />
+        <p className="text-xs text-muted-foreground mt-1">
+          Deve ser enviado no header como "Login"
+        </p>
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="password">Senha</Label>
+        <Label htmlFor="password">Credencial Senha</Label>
         <Input
           id="password"
           type="password"
-          placeholder="Senha fornecida pela Universal Assistance"
+          placeholder="Credencial de Senha fornecida pela Universal Assistance"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
         />
+        <p className="text-xs text-muted-foreground mt-1">
+          Deve ser enviado no header como "Senha"
+        </p>
       </div>
 
       <div className="flex items-center space-x-2 mt-4">
@@ -157,7 +163,6 @@ const UniversalAssistanceForm = ({
             <li>Use o botão "Testar Conexão" para verificar se a API está acessível</li>
             <li>Ative o modo de depuração para ver mensagens detalhadas de erro</li>
             <li>Certifique-se que o domínio do site publicado está na lista de permissões da API</li>
-            <li>Se nenhuma das opções funcionar, tente utilizar a API sem autenticação</li>
           </ul>
         </AlertDescription>
       </Alert>
