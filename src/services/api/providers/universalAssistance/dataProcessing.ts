@@ -138,6 +138,7 @@ export const processPlans = async (products: UniversalProduct[]): Promise<Insura
       id: product.id || product.codigo,
       nome: product.nome || product.descricao,
       preco: product.preco || product.valorBruto,
+      valorBruto: product.valorBruto,
       valorBrutoBrl: product.valorBrutoBrl,
       valorBrutoUsd: product.valorBrutoUsd,
       beneficios: product.beneficios?.length || 0,

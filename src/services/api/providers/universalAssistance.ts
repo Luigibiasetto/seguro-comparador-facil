@@ -93,7 +93,7 @@ export const fetchUniversalAssistanceOffers = async (params: SearchParams): Prom
         console.log(`Array de produtos/planos encontrado (${quoteData.length}):`, quoteData);
         return await processPlans(quoteData);
       }
-      // Se não encontrar produtos estruturados, mas tiver campo de benefícios, tenta usar
+      // Se não encontrar produtos estruturados, mas tiver campo de benefícios genéricos
       else if (quoteData.beneficios && Array.isArray(quoteData.beneficios)) {
         console.log("Nenhum produto estruturado encontrado, mas há benefícios. Gerando oferta genérica.");
         

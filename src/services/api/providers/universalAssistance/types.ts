@@ -8,6 +8,7 @@ export interface UniversalBenefit {
   descricao: string;
   idIdioma?: number;
   icone?: string;
+  valorEmDinheiro?: number;
 }
 
 // Tipos para as classificações
@@ -99,6 +100,8 @@ export interface UniversalProduct {
   descricao?: string;
   preco: number;
   valorBruto?: number;
+  valorBrutoBrl?: number;
+  valorBrutoUsd?: number;
   coberturas?: Array<{
     tipo?: string;
     nome?: string;
@@ -121,6 +124,7 @@ export interface UniversalQuoteResponse {
   urlVoucher?: string;
   valorBruto?: number;
   moeda?: string;
+  beneficios?: Array<UniversalBenefit>;
 }
 
 // Tipo de função para transformar produtos da API em ofertas do sistema
