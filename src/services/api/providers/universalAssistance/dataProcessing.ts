@@ -5,6 +5,26 @@ import { getProductBenefits } from "./api";
 
 // Helper function to extract coverage values
 export const extractCoverage = (product: UniversalProduct, type: string, defaultValue: number): number => {
+  // Primeiro verificamos os benefícios do produto
+  if (product.beneficios && Array.isArray(product.beneficios)) {
+    const benefit = product.beneficios.find(b => {
+      // Verifica se é um benefício monetário e se o nome contém o tipo buscado
+      const descricao = b.descricao?.toLowerCase() || '';
+      const matches = [
+        type === 'medical' && (descricao.includes('médica') || descricao.includes('hospitalares')),
+        type === 'baggage' && (descricao.includes('bagagem') || descricao.includes('mala')),
+        type === 'cancellation' && (descricao.includes('cancelamento') || descricao.includes('cancel')),
+        type === 'delay' && (descricao.includes('atraso') || descricao.includes('delay'))
+      ];
+      
+      return matches.some(m => m === true);
+    });
+    
+    if (benefit && benefit.valorEmDinheiro) {
+      return benefit.valorEmDinheiro;
+    }
+  }
+  
   // Tentar extrair cobertura dos diferentes formatos possíveis de resposta
   if (product.coberturas) {
     if (Array.isArray(product.coberturas)) {
@@ -46,13 +66,13 @@ export const extractBenefits = (product: UniversalProduct): string[] => {
     if (Array.isArray(product.beneficios)) {
       return product.beneficios.map((b: any) => {
         if (typeof b === 'string') return b;
-        return b.nome || b.descricao || "Benefício";
+        return b.descricao || b.nome || "Benefício";
       });
     } else if (typeof product.beneficios === 'object') {
       // Se for um objeto, extraímos os valores
       return Object.values(product.beneficios).map((b: any) => {
         if (typeof b === 'string') return b;
-        return b.nome || b.descricao || "Benefício";
+        return b.descricao || b.nome || "Benefício";
       });
     }
   }
@@ -85,7 +105,7 @@ export const enrichProductBenefits = async (product: UniversalProduct): Promise<
         // Combinamos os benefícios, removendo duplicatas
         const allBenefits = [
           ...initialBenefits,
-          ...apiBenefits.map(b => b.nome || b.descricao)
+          ...apiBenefits.map(b => b.descricao || b.nome || "")
         ];
         
         // Removemos duplicatas
@@ -105,28 +125,69 @@ export const enrichProductBenefits = async (product: UniversalProduct): Promise<
 export const processPlans = async (products: UniversalProduct[]): Promise<InsuranceOffer[]> => {
   const processedOffers: InsuranceOffer[] = [];
   
+  console.log("Processando produtos recebidos da API:", products);
+  
   for (let i = 0; i < products.length; i++) {
     const product = products[i];
     
     // Enriquecemos os benefícios buscando da API
     const enrichedBenefits = await enrichProductBenefits(product);
     
+    // Log detalhado para cada produto
+    console.log(`Produto ${i + 1} - Detalhes:`, {
+      id: product.id || product.codigo,
+      nome: product.nome || product.descricao,
+      preco: product.preco || product.valorBruto,
+      valorBrutoBrl: product.valorBrutoBrl,
+      valorBrutoUsd: product.valorBrutoUsd,
+      beneficios: product.beneficios?.length || 0,
+      coberturas: product.coberturas
+    });
+    
+    // Extrair preço conforme documentação
+    let price = 0;
+    if (product.valorBrutoBrl) {
+      price = parseFloat(product.valorBrutoBrl.toString());
+    } else if (product.preco) {
+      price = parseFloat(product.preco.toString());
+    } else if (product.valorBruto) {
+      price = parseFloat(product.valorBruto.toString());
+    } else {
+      // Fallback para preço aleatório
+      price = Math.floor(Math.random() * 300) + 100;
+    }
+    
+    // Extrair coberturas com logs detalhados
+    const medicalCoverage = extractCoverage(product, 'medical', 40000);
+    const baggageCoverage = extractCoverage(product, 'baggage', 1000);
+    const cancellationCoverage = extractCoverage(product, 'cancellation', 2000);
+    const delayCoverage = extractCoverage(product, 'delay', 200);
+    
+    console.log(`Produto ${i + 1} - Coberturas extraídas:`, {
+      medical: medicalCoverage,
+      baggage: baggageCoverage,
+      cancellation: cancellationCoverage,
+      delay: delayCoverage
+    });
+    
     processedOffers.push({
       id: product.id || product.codigo || `universal-${Math.random().toString(36).substring(2, 9)}`,
       providerId: "universal-assist",
       name: product.nome || product.descricao || `Plano Universal ${i + 1}`,
-      price: parseFloat(product.preco?.toString() || product.valorBruto?.toString() || "0") || Math.floor(Math.random() * 300) + 100,
+      price: price,
       coverage: {
-        medical: extractCoverage(product, 'medical', 40000),
-        baggage: extractCoverage(product, 'baggage', 1000),
-        cancellation: extractCoverage(product, 'cancellation', 2000),
-        delay: extractCoverage(product, 'delay', 200),
+        medical: medicalCoverage,
+        baggage: baggageCoverage,
+        cancellation: cancellationCoverage,
+        delay: delayCoverage,
       },
       benefits: enrichedBenefits,
       rating: 4.5 + (Math.random() * 0.5),
       recommended: i === 0,
     });
   }
+  
+  console.log("Ofertas processadas:", processedOffers);
   
   return processedOffers;
 };

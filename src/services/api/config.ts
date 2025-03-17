@@ -25,6 +25,8 @@ let apiConfig: ApiConfig = {
 
 // Function to configure the API
 export const configureInsuranceAPI = (config: Partial<ApiConfig>) => {
+  console.log("Configurando API com:", config);
+  
   apiConfig = { ...apiConfig, ...config };
   
   // Ensure baseUrl doesn't have trailing slashes
@@ -46,6 +48,8 @@ export const configureInsuranceAPI = (config: Partial<ApiConfig>) => {
     'X-Requested-With': 'XMLHttpRequest'
   };
   
+  console.log("Configuração final da API:", apiConfig);
+  
   return apiConfig;
 };
 
@@ -59,6 +63,9 @@ export const getApiUrl = (endpoint: string): string => {
   const config = getApiConfig();
   const baseUrl = config.baseUrl;
   const fullUrl = `${baseUrl}${endpoint.startsWith('/') ? endpoint : '/' + endpoint}`;
+  
+  console.log(`Gerando URL para endpoint ${endpoint}: ${fullUrl}`);
+  
   return fullUrl;
 };
 

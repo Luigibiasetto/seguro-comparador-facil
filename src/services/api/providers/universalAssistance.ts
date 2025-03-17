@@ -6,13 +6,15 @@ import {
   getQuote, 
   prepareQuotePayload, 
   testConnection,
-  getProductBenefits
+  getProductBenefits,
+  getClassifications,
+  getTripTypes,
+  getBenefits
 } from "./universalAssistance/api";
 import { 
   processPlans, 
   generateMockOffers 
 } from "./universalAssistance/dataProcessing";
-import { UniversalQuoteResponse } from "./universalAssistance/types";
 
 export const fetchUniversalAssistanceOffers = async (params: SearchParams): Promise<InsuranceOffer[]> => {
   try {
@@ -23,6 +25,28 @@ export const fetchUniversalAssistanceOffers = async (params: SearchParams): Prom
       throw new Error("Credenciais da Universal Assistance não configuradas corretamente");
     }
 
+    // Log configuração atual
+    console.log("Configuração API:", {
+      baseUrl: apiConfig.baseUrl,
+      username: apiConfig.providerSettings.username,
+      useProxy: apiConfig.useProxy,
+      debugMode: apiConfig.debugMode
+    });
+
+    // Pré-validação: buscar classificações e tipos de viagem para verificar a conexão
+    try {
+      console.log("Validando conexão com a API");
+      const [classifications, tripTypes] = await Promise.all([
+        getClassifications(),
+        getTripTypes()
+      ]);
+      console.log("Classificações disponíveis:", classifications);
+      console.log("Tipos de viagem disponíveis:", tripTypes);
+    } catch (validationError) {
+      console.error("Erro na validação inicial da API:", validationError);
+      // Continuamos mesmo com erro na validação
+    }
+
     // Preparar payload conforme documentação
     const cotacaoPayload = prepareQuotePayload(params);
     console.log("Payload de cotação:", cotacaoPayload);
@@ -31,24 +55,20 @@ export const fetchUniversalAssistanceOffers = async (params: SearchParams): Prom
     try {
       console.log("Realizando cotação direta com a API");
       const quoteData = await getQuote(cotacaoPayload);
-      console.log("Resposta da cotação:", quoteData);
+      console.log("Resposta completa da cotação:", quoteData);
       
       // Processar a resposta da API
-      if (!quoteData) return generateMockOffers(5);
-      
-      // Extrair os produtos/planos
-      let products = [];
-      if (quoteData.produtos) {
-        products = quoteData.produtos;
-      } else if (quoteData.planos) {
-        products = quoteData.planos;
+      if (!quoteData) {
+        console.warn("Resposta de cotação vazia, usando dados mockados");
+        return generateMockOffers(5);
       }
       
-      if (products && products.length > 0) {
-        console.log(`Produtos encontrados (${products.length}):`, products);
+      // Extrair os produtos/planos conforme documentação
+      if (quoteData.produtos && quoteData.produtos.length > 0) {
+        console.log(`Produtos encontrados (${quoteData.produtos.length}):`, quoteData.produtos);
         
-        // Para cada produto, tentar buscar os benefícios específicos
-        for (const product of products) {
+        // Enriquecer produtos com benefícios específicos
+        for (const product of quoteData.produtos) {
           try {
             if (product.id) {
               const benefits = await getProductBenefits(product.id);
@@ -61,7 +81,31 @@ export const fetchUniversalAssistanceOffers = async (params: SearchParams): Prom
           }
         }
         
-        return await processPlans(products);
+        return await processPlans(quoteData.produtos);
+      } 
+      // Verificar campo 'planos' se 'produtos' não existir
+      else if (quoteData.planos && quoteData.planos.length > 0) {
+        console.log(`Planos encontrados (${quoteData.planos.length}):`, quoteData.planos);
+        return await processPlans(quoteData.planos);
+      }
+      // Verificar se o próprio objeto da resposta é um array de produtos
+      else if (Array.isArray(quoteData) && quoteData.length > 0) {
+        console.log(`Array de produtos/planos encontrado (${quoteData.length}):`, quoteData);
+        return await processPlans(quoteData);
+      }
+      // Se não encontrar produtos estruturados, mas tiver campo de benefícios, tenta usar
+      else if (quoteData.beneficios && Array.isArray(quoteData.beneficios)) {
+        console.log("Nenhum produto estruturado encontrado, mas há benefícios. Gerando oferta genérica.");
+        
+        // Criar um produto genérico a partir dos benefícios
+        const genericProduct = {
+          id: "generic-universal",
+          nome: "Plano Universal Standard",
+          preco: 150, // Valor padrão
+          beneficios: quoteData.beneficios
+        };
+        
+        return await processPlans([genericProduct]);
       }
       
       // Se não encontrar produtos, exibir mensagem e usar dados mockados
@@ -95,7 +139,23 @@ export const fetchUniversalAssistanceOffers = async (params: SearchParams): Prom
 // Testa a conexão com a API da Universal Assistance
 export const testUniversalAssistanceConnection = async (): Promise<{ success: boolean, message: string, data?: any }> => {
   try {
-    return await testConnection();
+    const result = await testConnection();
+    
+    // Se for bem sucedido, também tentamos buscar benefícios para verificar
+    if (result.success) {
+      try {
+        const benefits = await getBenefits();
+        console.log("Benefícios recuperados durante o teste:", benefits);
+        result.data = {
+          ...result.data,
+          benefits: benefits.slice(0, 5) // Limitamos para não sobrecarregar os logs
+        };
+      } catch (benefitsError) {
+        console.warn("Teste de conexão bem sucedido, mas falha ao buscar benefícios:", benefitsError);
+      }
+    }
+    
+    return result;
   } catch (error) {
     console.error("Erro no teste de conexão:", error);
     return {

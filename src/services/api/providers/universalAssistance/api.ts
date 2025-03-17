@@ -108,12 +108,21 @@ export const fetchUniversalPut = async <T>(endpoint: string, payload: any): Prom
   return data as T;
 };
 
-// Implementação das funções específicas para cada endpoint
-
 // GET /v1/Agencia/Vendas - Consultar vendas da agência
-export const getAgencyVendas = async (): Promise<UniversalSale[]> => {
+export const getAgencyVendas = async (inicio?: string, fim?: string, apenasTitular?: boolean): Promise<UniversalSale[]> => {
   try {
-    return await fetchUniversalGet<UniversalSale[]>('/Agencia/Vendas');
+    let endpoint = '/Agencia/Vendas';
+    const params = [];
+    
+    if (inicio) params.push(`inicio=${inicio}`);
+    if (fim) params.push(`fim=${fim}`);
+    if (apenasTitular !== undefined) params.push(`apenasTitular=${apenasTitular}`);
+    
+    if (params.length > 0) {
+      endpoint += `?${params.join('&')}`;
+    }
+    
+    return await fetchUniversalGet<UniversalSale[]>(endpoint);
   } catch (error) {
     console.error("Erro ao obter vendas da agência:", error);
     toast.error("Erro ao obter vendas da agência");
@@ -306,10 +315,23 @@ export const finalizePurchase = async (purchaseData: any): Promise<any> => {
 // POST /v1/Cotacao - Cotação de seguro
 export const getQuote = async (payload: UniversalQuotePayload): Promise<UniversalQuoteResponse> => {
   try {
-    return await fetchUniversalPost<UniversalQuoteResponse>('/Cotacao', payload);
+    console.log("Enviando requisição de cotação com payload:", payload);
+    
+    // Certifique-se de que os campos obrigatórios estão presentes
+    if (!payload.destinos || !payload.passageiros || !payload.dataSaida || !payload.dataRetorno) {
+      throw new Error("Payload de cotação incompleto. Verifique os campos obrigatórios.");
+    }
+    
+    // Exibir o payload para depuração
+    console.log("Headers da requisição:", getUniversalHeaders());
+    
+    const response = await fetchUniversalPost<UniversalQuoteResponse>('/Cotacao', payload);
+    console.log("Resposta da cotação:", response);
+    
+    return response;
   } catch (error) {
     console.error("Erro ao obter cotação:", error);
-    toast.error("Erro ao obter cotação de seguro");
+    toast.error("Erro ao obter cotação de seguro: " + (error instanceof Error ? error.message : "Erro desconhecido"));
     throw error;
   }
 };
