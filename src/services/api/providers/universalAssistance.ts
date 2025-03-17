@@ -1,3 +1,4 @@
+
 import { toast } from "sonner";
 import { getApiConfig } from "../config";
 import { InsuranceOffer, SearchParams } from "../types";
@@ -81,7 +82,7 @@ export const fetchUniversalAssistanceOffers = async (params: SearchParams): Prom
         
         // Criar um produto genérico a partir dos benefícios
         const genericProduct = {
-          id: "generic-universal",
+          codigo: "generic-universal",
           nome: "Plano Universal Standard",
           preco: 150, // Valor padrão
           beneficios: quoteData.beneficios

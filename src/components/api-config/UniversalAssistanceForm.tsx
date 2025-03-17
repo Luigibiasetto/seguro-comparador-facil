@@ -48,7 +48,7 @@ const UniversalAssistanceForm = ({
           required
         />
         <p className="text-xs text-muted-foreground mt-1">
-          Deve ser enviado no header como <strong>"Login"</strong>
+          Enviado no header como <strong>"Login"</strong>
         </p>
       </div>
 
@@ -63,7 +63,7 @@ const UniversalAssistanceForm = ({
           required
         />
         <p className="text-xs text-muted-foreground mt-1">
-          Deve ser enviado no header como <strong>"Senha"</strong>
+          Enviado no header como <strong>"Senha"</strong>
         </p>
       </div>
 

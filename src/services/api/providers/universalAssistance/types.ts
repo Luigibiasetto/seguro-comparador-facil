@@ -1,426 +1,122 @@
-import { toast } from "sonner";
-import { getApiConfig, getApiUrl } from "../../config";
-import { calculateTripDuration } from "../../utils";
-import { 
-  UniversalBenefit,
-  UniversalClassification,
-  UniversalTripType,
-  UniversalCardOperator,
-  UniversalDocumentType,
-  UniversalTariffType,
-  UniversalDestination,
-  UniversalPassportCountry,
-  UniversalCurrency,
-  UniversalSale,
-  UniversalQuotePayload,
-  UniversalQuoteResponse
-} from "./types";
-import { SearchParams } from "../../types";
 
-// Função para obter os headers com credenciais
-export const getUniversalHeaders = () => {
-  const apiConfig = getApiConfig();
-  
-  if (!apiConfig.providerSettings?.username || !apiConfig.providerSettings?.password) {
-    throw new Error("Credenciais da Universal Assistance não configuradas corretamente");
-  }
-  
-  return {
-    'Content-Type': 'application/json',
-    'Accept': 'application/json',
-    'Login': apiConfig.providerSettings.username,
-    'Senha': apiConfig.providerSettings.password,
-    'Origin': window.location.origin
-  };
-};
+// Interfaces for Universal Assistance API
 
-// Função genérica para fazer uma requisição GET
-export const fetchUniversalGet = async <T>(endpoint: string): Promise<T> => {
-  const headers = getUniversalHeaders();
-  const url = getApiUrl(endpoint);
-  
-  console.log(`Fazendo requisição GET para: ${url}`);
-  
-  const response = await fetch(url, {
-    method: 'GET',
-    headers: headers,
-    mode: 'cors'
-  });
-  
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error(`Erro na requisição GET ${endpoint}:`, errorText);
-    throw new Error(`Falha na requisição GET ${endpoint}: ${response.status} - ${errorText}`);
-  }
-  
-  const data = await response.json();
-  return data as T;
-};
-
-// Função genérica para fazer uma requisição POST
-export const fetchUniversalPost = async <T>(endpoint: string, payload: any): Promise<T> => {
-  const headers = getUniversalHeaders();
-  const url = getApiUrl(endpoint);
-  
-  console.log(`Fazendo requisição POST para: ${url}`);
-  console.log('Payload:', payload);
-  
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: headers,
-    body: JSON.stringify(payload),
-    mode: 'cors'
-  });
-  
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error(`Erro na requisição POST ${endpoint}:`, errorText);
-    throw new Error(`Falha na requisição POST ${endpoint}: ${response.status} - ${errorText}`);
-  }
-  
-  const data = await response.json();
-  return data as T;
-};
-
-// Função genérica para fazer uma requisição PUT
-export const fetchUniversalPut = async <T>(endpoint: string, payload: any): Promise<T> => {
-  const headers = getUniversalHeaders();
-  const url = getApiUrl(endpoint);
-  
-  console.log(`Fazendo requisição PUT para: ${url}`);
-  console.log('Payload:', payload);
-  
-  const response = await fetch(url, {
-    method: 'PUT',
-    headers: headers,
-    body: JSON.stringify(payload),
-    mode: 'cors'
-  });
-  
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error(`Erro na requisição PUT ${endpoint}:`, errorText);
-    throw new Error(`Falha na requisição PUT ${endpoint}: ${response.status} - ${errorText}`);
-  }
-  
-  const data = await response.json();
-  return data as T;
-};
-
-// GET /v1/Agencia/Vendas - Consultar vendas da agência
-export const getAgencyVendas = async (inicio?: string, fim?: string, apenasTitular?: boolean): Promise<UniversalSale[]> => {
-  try {
-    let endpoint = '/Agencia/Vendas';
-    const params = [];
-    
-    if (inicio) params.push(`inicio=${inicio}`);
-    if (fim) params.push(`fim=${fim}`);
-    if (apenasTitular !== undefined) params.push(`apenasTitular=${apenasTitular}`);
-    
-    if (params.length > 0) {
-      endpoint += `?${params.join('&')}`;
-    }
-    
-    return await fetchUniversalGet<UniversalSale[]>(endpoint);
-  } catch (error) {
-    console.error("Erro ao obter vendas da agência:", error);
-    toast.error("Erro ao obter vendas da agência");
-    return [];
-  }
-};
-
-// GET /v1/beneficios - Obter benefícios disponíveis
-export const getBenefits = async (idioma?: number, tipoTarifa?: number, isNacional?: boolean): Promise<UniversalBenefit[]> => {
-  try {
-    let endpoint = '/beneficios';
-    const params = [];
-    
-    if (idioma) params.push(`idioma=${idioma}`);
-    if (tipoTarifa) params.push(`tipoTarifa=${tipoTarifa}`);
-    if (isNacional !== undefined) params.push(`isNacional=${isNacional}`);
-    
-    if (params.length > 0) {
-      endpoint += `?${params.join('&')}`;
-    }
-    
-    return await fetchUniversalGet<UniversalBenefit[]>(endpoint);
-  } catch (error) {
-    console.error("Erro ao obter benefícios:", error);
-    toast.error("Erro ao obter lista de benefícios");
-    return [];
-  }
-};
-
-// GET /v1/tipoviagem - Listar tipos de viagem
-export const getTripTypes = async (): Promise<UniversalTripType[]> => {
-  try {
-    return await fetchUniversalGet<UniversalTripType[]>('/tipoviagem');
-  } catch (error) {
-    console.error("Erro ao obter tipos de viagem:", error);
-    toast.error("Erro ao obter tipos de viagem");
-    return [];
-  }
-};
-
-// GET /v1/Voucher/imprimir/:parametro - Gerar impressão do voucher
-export const getVoucherPrintUrl = (carrinhoId: string): string => {
-  const apiConfig = getApiConfig();
-  return `${apiConfig.baseUrl}/Voucher/imprimir/${carrinhoId}`;
-};
-
-// GET /v1/operadoras - Listar operadoras (bandeiras de cartão)
-export const getCardOperators = async (): Promise<UniversalCardOperator[]> => {
-  try {
-    return await fetchUniversalGet<UniversalCardOperator[]>('/operadoras');
-  } catch (error) {
-    console.error("Erro ao obter operadoras de cartão:", error);
-    toast.error("Erro ao obter bandeiras de cartão");
-    return [];
-  }
-};
-
-// GET /v1/tiposdocumento - Listar tipos de documentos
-export const getDocumentTypes = async (): Promise<UniversalDocumentType[]> => {
-  try {
-    return await fetchUniversalGet<UniversalDocumentType[]>('/tiposdocumento');
-  } catch (error) {
-    console.error("Erro ao obter tipos de documento:", error);
-    toast.error("Erro ao obter tipos de documento");
-    return [];
-  }
-};
-
-// GET /v1/classificacoes - Obter classificações
-export const getClassifications = async (): Promise<UniversalClassification[]> => {
-  try {
-    return await fetchUniversalGet<UniversalClassification[]>('/classificacoes');
-  } catch (error) {
-    console.error("Erro ao obter classificações:", error);
-    toast.error("Erro ao obter classificações");
-    return [];
-  }
-};
-
-// GET /v1/tipostarifa - Listar tipos de tarifa
-export const getTariffTypes = async (): Promise<UniversalTariffType[]> => {
-  try {
-    return await fetchUniversalGet<UniversalTariffType[]>('/tipostarifa');
-  } catch (error) {
-    console.error("Erro ao obter tipos de tarifa:", error);
-    toast.error("Erro ao obter tipos de tarifa");
-    return [];
-  }
-};
-
-// GET /v1/destinos/:id - Buscar destino específico
-export const getDestination = async (id: string): Promise<UniversalDestination> => {
-  try {
-    return await fetchUniversalGet<UniversalDestination>(`/destinos/${id}`);
-  } catch (error) {
-    console.error(`Erro ao obter destino ${id}:`, error);
-    toast.error("Erro ao obter informações do destino");
-    throw error;
-  }
-};
-
-// GET /v1/paisesPassaporte - Listar países/passaportes
-export const getPassportCountries = async (): Promise<UniversalPassportCountry[]> => {
-  try {
-    return await fetchUniversalGet<UniversalPassportCountry[]>('/paisesPassaporte');
-  } catch (error) {
-    console.error("Erro ao obter países/passaportes:", error);
-    toast.error("Erro ao obter lista de países");
-    return [];
-  }
-};
-
-// GET /v1/Emissor/Setup - Configuração inicial do emissor
-export const getEmissorSetup = async (): Promise<any> => {
-  try {
-    return await fetchUniversalGet<any>('/Emissor/Setup');
-  } catch (error) {
-    console.error("Erro ao obter configuração do emissor:", error);
-    toast.error("Erro ao obter configuração do emissor");
-    return {};
-  }
-};
-
-// POST /v1/cupom/adicionar - Adicionar cupom
-export const addCoupon = async (couponCode: string): Promise<any> => {
-  try {
-    return await fetchUniversalPost<any>('/cupom/adicionar', { cupom: couponCode });
-  } catch (error) {
-    console.error("Erro ao adicionar cupom:", error);
-    toast.error("Erro ao adicionar cupom");
-    throw error;
-  }
-};
-
-// GET /v1/moedas - Listar moedas
-export const getCurrencies = async (): Promise<UniversalCurrency[]> => {
-  try {
-    return await fetchUniversalGet<UniversalCurrency[]>('/moedas');
-  } catch (error) {
-    console.error("Erro ao obter moedas:", error);
-    toast.error("Erro ao obter lista de moedas");
-    return [];
-  }
-};
-
-// PUT /v1/CancelamentoIndividual/:bilhete - Cancelamento individual
-export const cancelIndividual = async (bilhete: string, motivo: string): Promise<any> => {
-  try {
-    return await fetchUniversalPut<any>(`/CancelamentoIndividual/${bilhete}`, { motivo });
-  } catch (error) {
-    console.error(`Erro ao cancelar bilhete ${bilhete}:`, error);
-    toast.error("Erro ao realizar cancelamento");
-    throw error;
-  }
-};
-
-// GET /v1/melius - Obter informações "melius"
-export const getMelius = async (): Promise<any> => {
-  try {
-    return await fetchUniversalGet<any>('/melius');
-  } catch (error) {
-    console.error("Erro ao obter informações melius:", error);
-    toast.error("Erro ao obter informações adicionais");
-    return {};
-  }
-};
-
-// GET /v1/Agencia/ListarVendas - Listar vendas
-export const listAgencyVendas = async (): Promise<UniversalSale[]> => {
-  try {
-    return await fetchUniversalGet<UniversalSale[]>('/Agencia/ListarVendas');
-  } catch (error) {
-    console.error("Erro ao listar vendas da agência:", error);
-    toast.error("Erro ao listar vendas");
-    return [];
-  }
-};
-
-// POST /v1/Compras - Finalizar compra
-export const finalizePurchase = async (purchaseData: any): Promise<any> => {
-  try {
-    return await fetchUniversalPost<any>('/Compras', purchaseData);
-  } catch (error) {
-    console.error("Erro ao finalizar compra:", error);
-    toast.error("Erro ao finalizar compra");
-    throw error;
-  }
-};
-
-// POST /v1/Cotacao - Cotação de seguro
-export const getQuote = async (payload: UniversalQuotePayload): Promise<UniversalQuoteResponse> => {
-  try {
-    console.log("Enviando requisição de cotação com payload:", payload);
-    
-    // Certifique-se de que os campos obrigatórios estão presentes
-    if (!payload.destinos || !payload.passageiros || !payload.dataSaida || !payload.dataRetorno) {
-      throw new Error("Payload de cotação incompleto. Verifique os campos obrigatórios.");
-    }
-    
-    // Exibir o payload para depuração
-    console.log("Headers da requisição:", getUniversalHeaders());
-    
-    const response = await fetchUniversalPost<UniversalQuoteResponse>('/Cotacao', payload);
-    console.log("Resposta da cotação:", response);
-    
-    return response;
-  } catch (error) {
-    console.error("Erro ao obter cotação:", error);
-    toast.error("Erro ao obter cotação de seguro: " + (error instanceof Error ? error.message : "Erro desconhecido"));
-    throw error;
-  }
-};
-
-// Função para preparar o payload de cotação conforme documentação
-export const prepareQuotePayload = (params: SearchParams): UniversalQuotePayload => {
-  const departureFormatted = new Date(params.departureDate).toISOString().split('T')[0];
-  const returnFormatted = new Date(params.returnDate).toISOString().split('T')[0];
-  
-  // Converter idades dos passageiros para o formato esperado pela API
-  const passageiros = params.passengers.ages.map(age => {
-    return {
-      nome: `Passageiro ${age} anos`,
-      dataNascimento: calculateBirthDate(age)
-    };
-  });
-  
-  // Determinar o tipo de viagem baseado no destino
-  const tipoViagem = params.destination === "BR" ? 0 : 1; // 0 para nacional, 1 para internacional
-  
-  // Determinar os destinos baseado no destino selecionado
-  const destinos = [getDestinationCode(params.destination)];
-  
-  return {
-    destinos: destinos,
-    passageiros: passageiros,
-    dataSaida: departureFormatted,
-    dataRetorno: returnFormatted,
-    tipoViagem: tipoViagem,
-    tipoTarifa: 1, // 1 para Folheto, 2 para Acordo
-    produtoAvulso: false,
-    cupom: "",
-    classificacoes: [1] // Default para folheto
-  };
-};
-
-// Função para testar a conexão com a API
-export const testConnection = async (): Promise<{ success: boolean, message: string, data?: any }> => {
-  try {
-    const classifications = await getClassifications();
-    return {
-      success: true,
-      message: "Conexão com a API estabelecida com sucesso",
-      data: classifications
-    };
-  } catch (error) {
-    console.error("Erro ao testar conexão:", error);
-    return {
-      success: false,
-      message: error instanceof Error ? error.message : "Erro desconhecido ao testar conexão"
-    };
-  }
-};
-
-// Função auxiliar para calcular data de nascimento baseada na idade
-function calculateBirthDate(age: number): string {
-  const today = new Date();
-  const birthYear = today.getFullYear() - age;
-  return `${birthYear}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+// Benefit interface
+export interface UniversalBenefit {
+  codigo: number;
+  nome: string;
+  descricao?: string;
+  isNacional?: boolean;
+  idioma?: number;
+  valor?: string | number;
+  valorCoberto?: string | number;
 }
 
-// Função para converter o destino em código conforme esperado pela API
-function getDestinationCode(destination: string): string {
-  // Mapeamento de destinos para códigos
-  const destinationMap: Record<string, string> = {
-    "NAMERICA": "NA", // América do Norte
-    "SAMERICA": "SA", // América do Sul
-    "EUROPE": "EU",   // Europa
-    "ASIA": "AS",     // Ásia
-    "AFRICA": "AF",   // África
-    "OCEANIA": "OC",  // Oceania
-    "BR": "BR"        // Brasil
-  };
-  
-  return destinationMap[destination] || destination;
+// Classification interface
+export interface UniversalClassification {
+  codigo: number;
+  descricao: string;
 }
 
-// Função para obter os benefícios específicos para um produto
-export const getProductBenefits = async (productId: string): Promise<UniversalBenefit[]> => {
-  try {
-    // Primeiro tentamos buscar benefícios específicos do produto, se a API suportar isso
-    return await fetchUniversalGet<UniversalBenefit[]>(`/beneficios?produto=${productId}`);
-  } catch (error) {
-    console.error(`Erro ao obter benefícios do produto ${productId}:`, error);
-    // Se falhar, tentamos buscar todos os benefícios
-    try {
-      return await getBenefits();
-    } catch (secondError) {
-      console.error("Erro ao obter benefícios gerais:", secondError);
-      return [];
-    }
-  }
-};
+// Trip type interface
+export interface UniversalTripType {
+  codigoTipoViagem: number;
+  tipo: string;
+}
+
+// Card operator interface
+export interface UniversalCardOperator {
+  codigoOperadora: number;
+  nome: string;
+}
+
+// Document type interface
+export interface UniversalDocumentType {
+  codigoTipo: number;
+  descricao: string;
+}
+
+// Tariff type interface
+export interface UniversalTariffType {
+  codigo: number;
+  nome: string;
+}
+
+// Destination interface
+export interface UniversalDestination {
+  codigo: string;
+  nome: string;
+  isNacional: boolean;
+}
+
+// Passport country interface
+export interface UniversalPassportCountry {
+  codigo: string;
+  nome: string;
+}
+
+// Currency interface
+export interface UniversalCurrency {
+  codigo: string;
+  nome: string;
+  simbolo: string;
+}
+
+// Sale interface
+export interface UniversalSale {
+  codigoCarrinho: string;
+  bilhete?: string;
+  dataSaida: string;
+  dataRetorno: string;
+  dataEmissao: string;
+  titular: string;
+  destino: string;
+  valorBrutoBrl?: number;
+  valorBrutoUsd?: number;
+}
+
+// Passenger interface
+export interface UniversalPassenger {
+  nome: string;
+  dataNascimento: string;
+}
+
+// Quote payload interface
+export interface UniversalQuotePayload {
+  destinos: string[];
+  passageiros: UniversalPassenger[];
+  dataSaida: string;
+  dataRetorno: string;
+  tipoViagem: number;
+  tipoTarifa: number;
+  produtoAvulso: boolean;
+  cupom: string;
+  classificacoes: number[];
+}
+
+// Product interface for quote responses
+export interface UniversalProduct {
+  codigo: string;
+  nome: string;
+  descricao?: string;
+  preco: number;
+  valorBrutoBrl?: number;
+  valorBrutoUsd?: number;
+  valorEmDinheiro?: number;
+  coberturas?: any;
+  beneficios?: any[];
+  caracteristicas?: any[];
+}
+
+// Quote response interface
+export interface UniversalQuoteResponse {
+  codigoCarrinho?: string;
+  codigoCotacao?: string;
+  urlVoucher?: string;
+  valorBrutoBrl?: number;
+  valorBrutoUsd?: number;
+  produtos?: UniversalProduct[];
+  planos?: UniversalProduct[];
+  message?: string;
+  beneficios?: any[];
+}

@@ -1,6 +1,8 @@
+
 import { toast } from "sonner";
 import { getApiConfig, getApiUrl } from "../../config";
 import { calculateTripDuration } from "../../utils";
+import { SearchParams } from "../../types";
 import { 
   UniversalBenefit,
   UniversalClassification,
@@ -15,7 +17,6 @@ import {
   UniversalQuotePayload,
   UniversalQuoteResponse
 } from "./types";
-import { SearchParams } from "../../types";
 
 // Função para obter os headers com credenciais
 export const getUniversalHeaders = () => {
@@ -313,12 +314,10 @@ export const getQuote = async (payload: UniversalQuotePayload): Promise<Universa
   try {
     console.log("Enviando requisição de cotação com payload:", payload);
     
-    // Certifique-se de que os campos obrigatórios estão presentes
     if (!payload.destinos || !payload.passageiros || !payload.dataSaida || !payload.dataRetorno) {
       throw new Error("Payload de cotação incompleto. Verifique os campos obrigatórios.");
     }
     
-    // Exibir o payload para depuração
     console.log("Headers da requisição:", getUniversalHeaders());
     
     const response = await fetchUniversalPost<UniversalQuoteResponse>('/Cotacao', payload);
@@ -337,7 +336,6 @@ export const prepareQuotePayload = (params: SearchParams): UniversalQuotePayload
   const departureFormatted = new Date(params.departureDate).toISOString().split('T')[0];
   const returnFormatted = new Date(params.returnDate).toISOString().split('T')[0];
   
-  // Converter idades dos passageiros para o formato esperado pela API
   const passageiros = params.passengers.ages.map(age => {
     return {
       nome: `Passageiro ${age} anos`,
@@ -345,11 +343,7 @@ export const prepareQuotePayload = (params: SearchParams): UniversalQuotePayload
     };
   });
   
-  // Determinar o tipo de viagem baseado no destino
-  // 0 para nacional, 1 para internacional
   const tipoViagem = params.destination === "BR" ? 0 : 1;
-  
-  // Determinar os destinos baseado no destino selecionado
   const destinos = [getDestinationCode(params.destination)];
   
   return {
@@ -392,7 +386,6 @@ function calculateBirthDate(age: number): string {
 
 // Função para converter o destino em código conforme esperado pela API
 function getDestinationCode(destination: string): string {
-  // Mapeamento de destinos para códigos
   const destinationMap: Record<string, string> = {
     "NAMERICA": "NA", // América do Norte
     "SAMERICA": "SA", // América do Sul
@@ -409,11 +402,9 @@ function getDestinationCode(destination: string): string {
 // Função para obter os benefícios específicos para um produto
 export const getProductBenefits = async (productId: string): Promise<UniversalBenefit[]> => {
   try {
-    // Primeiro tentamos buscar benefícios específicos do produto, se a API suportar isso
     return await fetchUniversalGet<UniversalBenefit[]>(`/beneficios?produto=${productId}`);
   } catch (error) {
     console.error(`Erro ao obter benefícios do produto ${productId}:`, error);
-    // Se falhar, tentamos buscar todos os benefícios
     try {
       return await getBenefits();
     } catch (secondError) {
