@@ -1,4 +1,3 @@
-
 import { toast } from "sonner";
 import { getApiConfig } from "../config";
 import { InsuranceOffer, SearchParams } from "../types";
@@ -15,7 +14,6 @@ import {
   processPlans, 
   generateMockOffers 
 } from "./universalAssistance/dataProcessing";
-import { UniversalQuoteResponse } from "./universalAssistance/types";
 
 export const fetchUniversalAssistanceOffers = async (params: SearchParams): Promise<InsuranceOffer[]> => {
   try {

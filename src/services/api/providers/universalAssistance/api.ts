@@ -1,8 +1,6 @@
-
 import { toast } from "sonner";
 import { getApiConfig, getApiUrl } from "../../config";
 import { calculateTripDuration } from "../../utils";
-import { SearchParams } from "../../types";
 import { 
   UniversalBenefit,
   UniversalClassification,
@@ -17,6 +15,7 @@ import {
   UniversalQuotePayload,
   UniversalQuoteResponse
 } from "./types";
+import { SearchParams } from "../../types";
 
 // Função para obter os headers com credenciais
 export const getUniversalHeaders = () => {
@@ -421,49 +420,5 @@ export const getProductBenefits = async (productId: string): Promise<UniversalBe
       console.error("Erro ao obter benefícios gerais:", secondError);
       return [];
     }
-  }
-};
-
-// GET /v1/beneficios - Obter benefícios disponíveis
-export const getBenefits = async (idioma?: number, tipoTarifa?: number, isNacional?: boolean): Promise<UniversalBenefit[]> => {
-  try {
-    let endpoint = '/beneficios';
-    const params = [];
-    
-    if (idioma) params.push(`idioma=${idioma}`);
-    if (tipoTarifa) params.push(`tipoTarifa=${tipoTarifa}`);
-    if (isNacional !== undefined) params.push(`isNacional=${isNacional}`);
-    
-    if (params.length > 0) {
-      endpoint += `?${params.join('&')}`;
-    }
-    
-    return await fetchUniversalGet<UniversalBenefit[]>(endpoint);
-  } catch (error) {
-    console.error("Erro ao obter benefícios:", error);
-    toast.error("Erro ao obter lista de benefícios");
-    return [];
-  }
-};
-
-// GET /v1/classificacoes - Obter classificações
-export const getClassifications = async (): Promise<UniversalClassification[]> => {
-  try {
-    return await fetchUniversalGet<UniversalClassification[]>('/classificacoes');
-  } catch (error) {
-    console.error("Erro ao obter classificações:", error);
-    toast.error("Erro ao obter classificações");
-    return [];
-  }
-};
-
-// GET /v1/tipoviagem - Listar tipos de viagem
-export const getTripTypes = async (): Promise<UniversalTripType[]> => {
-  try {
-    return await fetchUniversalGet<UniversalTripType[]>('/tipoviagem');
-  } catch (error) {
-    console.error("Erro ao obter tipos de viagem:", error);
-    toast.error("Erro ao obter tipos de viagem");
-    return [];
   }
 };

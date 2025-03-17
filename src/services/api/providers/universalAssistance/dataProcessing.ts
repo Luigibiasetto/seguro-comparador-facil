@@ -1,8 +1,6 @@
+
 import { InsuranceOffer } from "../../types";
-import { 
-  UniversalProduct, 
-  UniversalBenefit 
-} from "./types";
+import { UniversalProduct, UniversalBenefit } from "./types";
 import { getProductBenefits } from "./api";
 
 // Helper function to extract coverage values
@@ -152,7 +150,7 @@ export const processPlans = async (products: UniversalProduct[]): Promise<Insura
     if (product.valorBrutoBrl !== undefined) {
       price = typeof product.valorBrutoBrl === 'string' ? 
         parseFloat(product.valorBrutoBrl) : 
-        product.valorBrutoBrl as number;
+        product.valorBrutoBrl;
     } else if (product.preco !== undefined) {
       price = typeof product.preco === 'string' ? 
         parseFloat(product.preco) : 
