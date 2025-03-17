@@ -9,7 +9,7 @@ export const extractCoverage = (product: UniversalProduct, type: string, default
   if (product.beneficios && Array.isArray(product.beneficios)) {
     const benefit = product.beneficios.find(b => {
       // Verifica se é um benefício monetário e se o nome contém o tipo buscado
-      const descricao = b.descricao?.toLowerCase() || '';
+      const descricao = typeof b === 'string' ? b.toLowerCase() : (b.descricao?.toLowerCase() || '');
       const matches = [
         type === 'medical' && (descricao.includes('médica') || descricao.includes('hospitalares')),
         type === 'baggage' && (descricao.includes('bagagem') || descricao.includes('mala')),
@@ -20,7 +20,7 @@ export const extractCoverage = (product: UniversalProduct, type: string, default
       return matches.some(m => m === true);
     });
     
-    if (benefit && benefit.valorEmDinheiro) {
+    if (benefit && typeof benefit !== 'string' && benefit.valorEmDinheiro) {
       return benefit.valorEmDinheiro;
     }
   }
@@ -141,7 +141,7 @@ export const processPlans = async (products: UniversalProduct[]): Promise<Insura
       valorBruto: product.valorBruto,
       valorBrutoBrl: product.valorBrutoBrl,
       valorBrutoUsd: product.valorBrutoUsd,
-      beneficios: product.beneficios?.length || 0,
+      beneficios: product.beneficios ? (Array.isArray(product.beneficios) ? product.beneficios.length : 'objeto') : 0,
       coberturas: product.coberturas
     });
     
