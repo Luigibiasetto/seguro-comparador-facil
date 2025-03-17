@@ -18,6 +18,7 @@ import { InsuranceOffer, InsuranceProvider, SearchParams, CustomerInfo } from '@
 import CheckoutSummary from '@/components/checkout/CheckoutSummary';
 import CustomerForm from '@/components/checkout/CustomerForm';
 import PaymentForm from '@/components/checkout/PaymentForm';
+import { supabase } from '@/integrations/supabase/client';
 
 const Checkout = () => {
   const navigate = useNavigate();
@@ -26,6 +27,7 @@ const Checkout = () => {
   const [provider, setProvider] = useState<InsuranceProvider | null>(null);
   const [searchParams, setSearchParams] = useState<SearchParams | null>(null);
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   
   useEffect(() => {
     const storedOffer = secureRetrieve<InsuranceOffer>('selectedOffer');
@@ -41,6 +43,29 @@ const Checkout = () => {
     setOffer(storedOffer);
     setProvider(storedProvider);
     setSearchParams(storedParams);
+    
+    // Verificar autenticação
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.info('É necessário fazer login para prosseguir com a compra.', {
+          duration: 5000
+        });
+        navigate('/auth', { state: { from: '/checkout' } });
+      } else {
+        setIsAuthenticated(true);
+      }
+    };
+    
+    checkAuth();
+    
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      setIsAuthenticated(!!session);
+    });
+    
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
   }, [navigate]);
   
   const formatPrice = (price: number) => {
@@ -55,14 +80,32 @@ const Checkout = () => {
     setActiveTab('payment');
   };
   
-  const handlePaymentSubmit = (paymentMethod: 'pix' | 'creditCard', creditCardInfo?: any) => {
-    // Here you would typically process the payment and create the order
-    toast.success('Compra finalizada com sucesso!');
-    
-    // Simulate a payment process (in a real app, this would be an API call)
-    setTimeout(() => {
-      navigate('/');
-    }, 2000);
+  const handlePaymentSubmit = async (paymentMethod: 'pix' | 'creditCard', creditCardInfo?: any) => {
+    try {
+      // Verificar autenticação novamente
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error('Sua sessão expirou. Por favor, faça login novamente.');
+        navigate('/auth', { state: { from: '/checkout' } });
+        return;
+      }
+      
+      if (!offer || !provider || !searchParams || !customerInfo) {
+        toast.error('Informações incompletas. Por favor, tente novamente.');
+        return;
+      }
+      
+      // Simulação de criação de pedido
+      // Em uma implementação real, você salvaria no banco de dados
+      setTimeout(() => {
+        toast.success('Compra finalizada com sucesso!');
+        navigate('/profile');
+      }, 2000);
+      
+    } catch (error) {
+      console.error("Erro ao processar pagamento:", error);
+      toast.error('Erro ao processar pagamento. Por favor, tente novamente.');
+    }
   };
   
   const handleBackToResults = () => {

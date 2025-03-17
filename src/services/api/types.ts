@@ -102,5 +102,25 @@ export interface Lead {
   created_at?: Date | string;
 }
 
+// Interface para pedidos
+export interface Order {
+  id?: string;
+  user_id: string;
+  offer_id: string;
+  offer_data: InsuranceOffer;
+  provider_id: string;
+  provider_data: InsuranceProvider;
+  customer_info: CustomerInfo;
+  origin: string;
+  destination: string;
+  departure_date: string;
+  return_date: string;
+  payment_method: "pix" | "credit_card";
+  total_amount: number;
+  status: "pending" | "paid" | "cancelled" | "expired";
+  created_at?: string;
+}
+
 // Helper type for Supabase Json fields
 export type Json = any;
+
