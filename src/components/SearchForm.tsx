@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plane, Calendar, ArrowRight, Users } from "lucide-react";
+import { Plane, Calendar, ArrowRight, Users, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
@@ -17,6 +17,8 @@ import { cn } from "@/lib/utils";
 import PassengerSelect from "./PassengerSelect";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
+import { supabase } from "@/integrations/supabase/client";
+import { toast as sonnerToast } from "sonner";
 
 // Tipos para origem e destino com base na API da Universal Assistance
 type OriginType = "BR" | "INT-BR";
@@ -45,6 +47,8 @@ const SearchForm = ({ className = "", defaultExpanded = true }: SearchFormProps)
     ages: [30],
   });
   const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   // Estados da UI
   const [isDepartureFocused, setIsDepartureFocused] = useState(false);
@@ -98,6 +102,24 @@ const SearchForm = ({ className = "", defaultExpanded = true }: SearchFormProps)
       return false;
     }
 
+    if (!phone || phone.length < 14) {  // Verificação para (XX) XXXXX-XXXX = 14 caracteres
+      toast({
+        title: "Telefone inválido",
+        description: "Por favor, informe um telefone válido.",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    if (!email || !email.includes('@') || !email.includes('.')) {
+      toast({
+        title: "Email inválido",
+        description: "Por favor, informe um email válido.",
+        variant: "destructive",
+      });
+      return false;
+    }
+
     return true;
   };
 
@@ -124,23 +146,76 @@ const SearchForm = ({ className = "", defaultExpanded = true }: SearchFormProps)
     setPhone(formattedPhone);
   };
 
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setEmail(e.target.value);
+  };
+
+  // Salvar lead no banco de dados
+  const saveLead = async () => {
+    try {
+      const leadData = {
+        email,
+        phone,
+        origin,
+        destination,
+        departure_date: departureDate,
+        return_date: returnDate,
+        passengers: {
+          adults: passengers.count,
+          children: 0,
+          ages: passengers.ages
+        }
+      };
+
+      const { error } = await supabase
+        .from('leads')
+        .insert([leadData]);
+
+      if (error) {
+        console.error("Erro ao salvar lead:", error);
+        return false;
+      }
+      
+      return true;
+    } catch (error) {
+      console.error("Erro ao processar lead:", error);
+      return false;
+    }
+  };
+
   // Manipulador de envio do formulário
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!isValidForm()) return;
     
-    // Construir a URL de pesquisa
-    const searchParams = new URLSearchParams();
-    searchParams.append("origin", origin);
-    searchParams.append("destination", destination);
-    searchParams.append("departureDate", departureDate?.toISOString() || "");
-    searchParams.append("returnDate", returnDate?.toISOString() || "");
-    searchParams.append("passengers", JSON.stringify(passengers));
-    if (phone) searchParams.append("phone", phone);
+    setIsSubmitting(true);
     
-    // Navegar para a página de resultados
-    navigate(`/resultados?${searchParams.toString()}`);
+    try {
+      // Salvar o lead no banco de dados
+      const leadSaved = await saveLead();
+      if (!leadSaved) {
+        sonnerToast.error("Erro ao salvar seus dados. Tente novamente mais tarde.");
+      }
+      
+      // Construir a URL de pesquisa
+      const searchParams = new URLSearchParams();
+      searchParams.append("origin", origin);
+      searchParams.append("destination", destination);
+      searchParams.append("departureDate", departureDate?.toISOString() || "");
+      searchParams.append("returnDate", returnDate?.toISOString() || "");
+      searchParams.append("passengers", JSON.stringify(passengers));
+      searchParams.append("phone", phone);
+      searchParams.append("email", email);
+      
+      // Navegar para a página de resultados
+      navigate(`/resultados?${searchParams.toString()}`);
+    } catch (error) {
+      console.error("Erro no processamento:", error);
+      sonnerToast.error("Ocorreu um erro inesperado. Tente novamente.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // Format the passenger information for display
@@ -297,7 +372,7 @@ const SearchForm = ({ className = "", defaultExpanded = true }: SearchFormProps)
           </div>
 
           {/* Passageiros com informação de idade */}
-          <div className="lg:col-span-2">
+          <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
               Passageiros e Idades
             </label>
@@ -311,10 +386,28 @@ const SearchForm = ({ className = "", defaultExpanded = true }: SearchFormProps)
             </div>
           </div>
 
-          {/* Telefone (opcional) */}
+          {/* Email (obrigatório) - Novo campo */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              Telefone (opcional)
+              Email *
+            </label>
+            <div className="flex items-center input-glass rounded-lg">
+              <Mail className="ml-3 w-4 h-4 text-gray-500" />
+              <Input
+                type="email"
+                value={email}
+                onChange={handleEmailChange}
+                placeholder="seu@email.com"
+                className="border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0"
+                required
+              />
+            </div>
+          </div>
+
+          {/* Telefone (obrigatório) */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              Telefone *
             </label>
             <Input
               type="tel"
@@ -322,6 +415,7 @@ const SearchForm = ({ className = "", defaultExpanded = true }: SearchFormProps)
               onChange={handlePhoneChange}
               placeholder="(00) 00000-0000"
               className="input-glass"
+              required
             />
           </div>
 
@@ -330,10 +424,17 @@ const SearchForm = ({ className = "", defaultExpanded = true }: SearchFormProps)
             <Button
               type="submit"
               className="w-full bg-pink-500 hover:bg-pink-600 text-white font-medium py-2.5 flex items-center justify-center gap-2 group"
+              disabled={isSubmitting}
             >
-              <Plane className="w-4 h-4" />
-              <span>Buscar Seguros</span>
-              <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+              {isSubmitting ? (
+                <span className="animate-pulse">Processando...</span>
+              ) : (
+                <>
+                  <Plane className="w-4 h-4" />
+                  <span>Buscar Seguros</span>
+                  <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                </>
+              )}
             </Button>
           </div>
         </div>

@@ -28,7 +28,8 @@ export interface SearchParams {
     ages: number[];
     count?: number; // Added for backward compatibility
   };
-  phone?: string; // Added phone property
+  phone: string; // Agora obrigatório (removido o ?)
+  email: string; // Novo campo obrigatório
 }
 
 // Tipo para uma oferta de seguro
@@ -77,4 +78,22 @@ export interface CustomerInfo {
     state: string;
     country: string;
   };
+}
+
+// Novo tipo para os leads
+export interface Lead {
+  id?: string;
+  email: string;
+  phone: string;
+  origin: string;
+  destination: string;
+  departureDate: Date | string;
+  returnDate: Date | string;
+  passengers: {
+    adults: number;
+    children: number;
+    ages: number[];
+    count?: number;
+  };
+  created_at?: Date | string;
 }

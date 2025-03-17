@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -6,7 +5,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { secureRetrieve } from "@/services/security/dataSecurity";
-import { Eye, Download, ListFilter } from "lucide-react";
+import { Eye, Download, ListFilter, Users } from "lucide-react";
+import LeadsTable from "@/components/admin/LeadsTable";
 
 // Mock data para demonstração
 const mockPurchases = [
@@ -150,7 +150,7 @@ const AdminDashboard = () => {
       <main className="container mx-auto px-4 py-8">
         <div className="bg-white rounded-lg shadow-md p-6 mb-8">
           <h2 className="text-xl font-semibold mb-4">Dashboard</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <div className="bg-green-50 rounded-lg p-4 border border-green-100">
               <p className="text-sm text-gray-600">Total de Vendas (Mês)</p>
               <p className="text-2xl font-bold text-gray-900">R$ 45.780,00</p>
@@ -168,17 +168,31 @@ const AdminDashboard = () => {
               <p className="text-2xl font-bold text-gray-900">186</p>
               <p className="text-xs text-purple-600 mt-2">↑ 15% desde o mês passado</p>
             </div>
+            
+            <div className="bg-amber-50 rounded-lg p-4 border border-amber-100">
+              <p className="text-sm text-gray-600">Leads Recentes</p>
+              <p className="text-2xl font-bold text-gray-900">57</p>
+              <p className="text-xs text-amber-600 mt-2">↑ 8% desde o mês passado</p>
+            </div>
           </div>
         </div>
         
         <div className="bg-white rounded-lg shadow-md p-6">
-          <Tabs defaultValue="cotacoes">
+          <Tabs defaultValue="leads">
             <TabsList className="mb-6">
+              <TabsTrigger value="leads" className="flex items-center gap-1">
+                <Users className="h-4 w-4" />
+                <span>Leads</span>
+              </TabsTrigger>
               <TabsTrigger value="cotacoes">Cotações</TabsTrigger>
               <TabsTrigger value="pedidos">Pedidos</TabsTrigger>
               <TabsTrigger value="clientes">Clientes</TabsTrigger>
               <TabsTrigger value="relatorios">Relatórios</TabsTrigger>
             </TabsList>
+            
+            <TabsContent value="leads">
+              <LeadsTable />
+            </TabsContent>
             
             <TabsContent value="cotacoes">
               <div className="flex justify-between mb-4">
@@ -414,3 +428,4 @@ const AdminDashboard = () => {
 };
 
 export default AdminDashboard;
+

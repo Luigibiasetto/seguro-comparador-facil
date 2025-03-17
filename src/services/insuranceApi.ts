@@ -1,6 +1,6 @@
 
 import { toast } from "sonner";
-import { InsuranceOffer, InsuranceProvider, SearchParams } from "./api/types";
+import { InsuranceOffer, InsuranceProvider, SearchParams, Lead } from "./api/types";
 import { configureInsuranceAPI, getApiConfig } from "./api/config";
 import { parseSearchParams } from "./api/utils";
 import { fetchUniversalAssistanceOffers } from "./api/providers/universalAssistance";
@@ -22,6 +22,23 @@ export const searchInsurances = async (params: SearchParams): Promise<InsuranceO
     console.log("Iniciando busca de seguros com parâmetros:", params);
     const apiConfig = getApiConfig();
     console.log("Configuração atual da API:", apiConfig);
+    
+    // Salvar lead no banco de dados
+    try {
+      await saveLead({
+        email: params.email,
+        phone: params.phone,
+        origin: params.origin,
+        destination: params.destination,
+        departureDate: params.departureDate,
+        returnDate: params.returnDate,
+        passengers: params.passengers
+      });
+      console.log("Lead salvo com sucesso");
+    } catch (leadError) {
+      console.error("Erro ao salvar lead:", leadError);
+      // Continua a busca mesmo com erro no lead
+    }
     
     // Se a API não estiver configurada, alerta o usuário
     if (!apiConfig.baseUrl && !apiConfig.provider) {
@@ -126,6 +143,47 @@ export const getInsuranceProviders = async (): Promise<InsuranceProvider[]> => {
   }
 };
 
+// Salvar lead no banco de dados
+export const saveLead = async (lead: Omit<Lead, 'id' | 'created_at'>): Promise<boolean> => {
+  try {
+    const { error } = await supabase
+      .from('leads')
+      .insert([lead]);
+
+    if (error) {
+      console.error("Erro ao salvar lead:", error);
+      return false;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error("Erro ao processar lead:", error);
+    return false;
+  }
+};
+
+// Buscar leads do banco de dados (apenas para admins)
+export const getLeads = async (): Promise<Lead[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('leads')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error("Erro ao buscar leads:", error);
+      toast.error("Erro ao carregar leads");
+      return [];
+    }
+
+    return data || [];
+  } catch (error) {
+    console.error("Erro inesperado:", error);
+    toast.error("Erro ao carregar dados");
+    return [];
+  }
+};
+
 // Re-exporta os tipos e funções de utilidade
-export type { InsuranceProvider, InsuranceOffer, SearchParams };
+export type { InsuranceProvider, InsuranceOffer, SearchParams, Lead };
 export { configureInsuranceAPI, parseSearchParams };
