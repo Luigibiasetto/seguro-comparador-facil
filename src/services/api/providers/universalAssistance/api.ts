@@ -1,6 +1,6 @@
 
 import { toast } from "sonner";
-import { getApiConfig, getApiUrl, tryWithMultipleProxies } from "../../config";
+import { getApiConfig, getApiUrl } from "../../config";
 import { calculateTripDuration } from "../../utils";
 import { 
   UniversalBenefit,
@@ -17,7 +17,6 @@ import {
   UniversalQuoteResponse
 } from "./types";
 import { SearchParams } from "../../types";
-import { supabase } from "@/integrations/supabase/client";
 
 // Função para obter os headers com credenciais
 export const getUniversalHeaders = () => {
@@ -28,25 +27,18 @@ export const getUniversalHeaders = () => {
   }
   
   return {
-    ...(apiConfig.headers || {}),
     'Content-Type': 'application/json',
     'Accept': 'application/json',
     'Login': apiConfig.providerSettings.username,
     'Senha': apiConfig.providerSettings.password,
-    'Origin': window.location.origin,
-    'X-Requested-With': 'XMLHttpRequest',
-    'Access-Control-Allow-Origin': '*',
-    'Cache-Control': 'no-cache',
-    'Pragma': 'no-cache',
-    'Referrer-Policy': 'no-referrer'
+    'Origin': window.location.origin
   };
 };
 
 // Função genérica para fazer uma requisição GET
-export const fetchUniversalGet = async <T>(endpoint: string, proxyUrl?: string): Promise<T> => {
-  const apiConfig = getApiConfig();
+export const fetchUniversalGet = async <T>(endpoint: string): Promise<T> => {
   const headers = getUniversalHeaders();
-  const url = getApiUrl(endpoint, proxyUrl);
+  const url = getApiUrl(endpoint);
   
   console.log(`Fazendo requisição GET para: ${url}`);
   
@@ -63,15 +55,13 @@ export const fetchUniversalGet = async <T>(endpoint: string, proxyUrl?: string):
   }
   
   const data = await response.json();
-  console.log(`Dados obtidos de ${endpoint}:`, data);
   return data as T;
 };
 
 // Função genérica para fazer uma requisição POST
-export const fetchUniversalPost = async <T>(endpoint: string, payload: any, proxyUrl?: string): Promise<T> => {
-  const apiConfig = getApiConfig();
+export const fetchUniversalPost = async <T>(endpoint: string, payload: any): Promise<T> => {
   const headers = getUniversalHeaders();
-  const url = getApiUrl(endpoint, proxyUrl);
+  const url = getApiUrl(endpoint);
   
   console.log(`Fazendo requisição POST para: ${url}`);
   console.log('Payload:', payload);
@@ -90,15 +80,13 @@ export const fetchUniversalPost = async <T>(endpoint: string, payload: any, prox
   }
   
   const data = await response.json();
-  console.log(`Dados obtidos de ${endpoint}:`, data);
   return data as T;
 };
 
 // Função genérica para fazer uma requisição PUT
-export const fetchUniversalPut = async <T>(endpoint: string, payload: any, proxyUrl?: string): Promise<T> => {
-  const apiConfig = getApiConfig();
+export const fetchUniversalPut = async <T>(endpoint: string, payload: any): Promise<T> => {
   const headers = getUniversalHeaders();
-  const url = getApiUrl(endpoint, proxyUrl);
+  const url = getApiUrl(endpoint);
   
   console.log(`Fazendo requisição PUT para: ${url}`);
   console.log('Payload:', payload);
@@ -117,7 +105,6 @@ export const fetchUniversalPut = async <T>(endpoint: string, payload: any, proxy
   }
   
   const data = await response.json();
-  console.log(`Dados obtidos de ${endpoint}:`, data);
   return data as T;
 };
 
@@ -126,8 +113,7 @@ export const fetchUniversalPut = async <T>(endpoint: string, payload: any, proxy
 // GET /v1/Agencia/Vendas - Consultar vendas da agência
 export const getAgencyVendas = async (): Promise<UniversalSale[]> => {
   try {
-    return await tryWithMultipleProxies((proxyUrl) => 
-      fetchUniversalGet<UniversalSale[]>('/Agencia/Vendas', proxyUrl));
+    return await fetchUniversalGet<UniversalSale[]>('/Agencia/Vendas');
   } catch (error) {
     console.error("Erro ao obter vendas da agência:", error);
     toast.error("Erro ao obter vendas da agência");
@@ -149,8 +135,7 @@ export const getBenefits = async (idioma?: number, tipoTarifa?: number, isNacion
       endpoint += `?${params.join('&')}`;
     }
     
-    return await tryWithMultipleProxies((proxyUrl) => 
-      fetchUniversalGet<UniversalBenefit[]>(endpoint, proxyUrl));
+    return await fetchUniversalGet<UniversalBenefit[]>(endpoint);
   } catch (error) {
     console.error("Erro ao obter benefícios:", error);
     toast.error("Erro ao obter lista de benefícios");
@@ -161,8 +146,7 @@ export const getBenefits = async (idioma?: number, tipoTarifa?: number, isNacion
 // GET /v1/tipoviagem - Listar tipos de viagem
 export const getTripTypes = async (): Promise<UniversalTripType[]> => {
   try {
-    return await tryWithMultipleProxies((proxyUrl) => 
-      fetchUniversalGet<UniversalTripType[]>('/tipoviagem', proxyUrl));
+    return await fetchUniversalGet<UniversalTripType[]>('/tipoviagem');
   } catch (error) {
     console.error("Erro ao obter tipos de viagem:", error);
     toast.error("Erro ao obter tipos de viagem");
@@ -179,8 +163,7 @@ export const getVoucherPrintUrl = (carrinhoId: string): string => {
 // GET /v1/operadoras - Listar operadoras (bandeiras de cartão)
 export const getCardOperators = async (): Promise<UniversalCardOperator[]> => {
   try {
-    return await tryWithMultipleProxies((proxyUrl) => 
-      fetchUniversalGet<UniversalCardOperator[]>('/operadoras', proxyUrl));
+    return await fetchUniversalGet<UniversalCardOperator[]>('/operadoras');
   } catch (error) {
     console.error("Erro ao obter operadoras de cartão:", error);
     toast.error("Erro ao obter bandeiras de cartão");
@@ -191,8 +174,7 @@ export const getCardOperators = async (): Promise<UniversalCardOperator[]> => {
 // GET /v1/tiposdocumento - Listar tipos de documentos
 export const getDocumentTypes = async (): Promise<UniversalDocumentType[]> => {
   try {
-    return await tryWithMultipleProxies((proxyUrl) => 
-      fetchUniversalGet<UniversalDocumentType[]>('/tiposdocumento', proxyUrl));
+    return await fetchUniversalGet<UniversalDocumentType[]>('/tiposdocumento');
   } catch (error) {
     console.error("Erro ao obter tipos de documento:", error);
     toast.error("Erro ao obter tipos de documento");
@@ -203,8 +185,7 @@ export const getDocumentTypes = async (): Promise<UniversalDocumentType[]> => {
 // GET /v1/classificacoes - Obter classificações
 export const getClassifications = async (): Promise<UniversalClassification[]> => {
   try {
-    return await tryWithMultipleProxies((proxyUrl) => 
-      fetchUniversalGet<UniversalClassification[]>('/classificacoes', proxyUrl));
+    return await fetchUniversalGet<UniversalClassification[]>('/classificacoes');
   } catch (error) {
     console.error("Erro ao obter classificações:", error);
     toast.error("Erro ao obter classificações");
@@ -215,8 +196,7 @@ export const getClassifications = async (): Promise<UniversalClassification[]> =
 // GET /v1/tipostarifa - Listar tipos de tarifa
 export const getTariffTypes = async (): Promise<UniversalTariffType[]> => {
   try {
-    return await tryWithMultipleProxies((proxyUrl) => 
-      fetchUniversalGet<UniversalTariffType[]>('/tipostarifa', proxyUrl));
+    return await fetchUniversalGet<UniversalTariffType[]>('/tipostarifa');
   } catch (error) {
     console.error("Erro ao obter tipos de tarifa:", error);
     toast.error("Erro ao obter tipos de tarifa");
@@ -227,8 +207,7 @@ export const getTariffTypes = async (): Promise<UniversalTariffType[]> => {
 // GET /v1/destinos/:id - Buscar destino específico
 export const getDestination = async (id: string): Promise<UniversalDestination> => {
   try {
-    return await tryWithMultipleProxies((proxyUrl) => 
-      fetchUniversalGet<UniversalDestination>(`/destinos/${id}`, proxyUrl));
+    return await fetchUniversalGet<UniversalDestination>(`/destinos/${id}`);
   } catch (error) {
     console.error(`Erro ao obter destino ${id}:`, error);
     toast.error("Erro ao obter informações do destino");
@@ -239,8 +218,7 @@ export const getDestination = async (id: string): Promise<UniversalDestination> 
 // GET /v1/paisesPassaporte - Listar países/passaportes
 export const getPassportCountries = async (): Promise<UniversalPassportCountry[]> => {
   try {
-    return await tryWithMultipleProxies((proxyUrl) => 
-      fetchUniversalGet<UniversalPassportCountry[]>('/paisesPassaporte', proxyUrl));
+    return await fetchUniversalGet<UniversalPassportCountry[]>('/paisesPassaporte');
   } catch (error) {
     console.error("Erro ao obter países/passaportes:", error);
     toast.error("Erro ao obter lista de países");
@@ -251,8 +229,7 @@ export const getPassportCountries = async (): Promise<UniversalPassportCountry[]
 // GET /v1/Emissor/Setup - Configuração inicial do emissor
 export const getEmissorSetup = async (): Promise<any> => {
   try {
-    return await tryWithMultipleProxies((proxyUrl) => 
-      fetchUniversalGet<any>('/Emissor/Setup', proxyUrl));
+    return await fetchUniversalGet<any>('/Emissor/Setup');
   } catch (error) {
     console.error("Erro ao obter configuração do emissor:", error);
     toast.error("Erro ao obter configuração do emissor");
@@ -263,8 +240,7 @@ export const getEmissorSetup = async (): Promise<any> => {
 // POST /v1/cupom/adicionar - Adicionar cupom
 export const addCoupon = async (couponCode: string): Promise<any> => {
   try {
-    return await tryWithMultipleProxies((proxyUrl) => 
-      fetchUniversalPost<any>('/cupom/adicionar', { cupom: couponCode }, proxyUrl));
+    return await fetchUniversalPost<any>('/cupom/adicionar', { cupom: couponCode });
   } catch (error) {
     console.error("Erro ao adicionar cupom:", error);
     toast.error("Erro ao adicionar cupom");
@@ -275,8 +251,7 @@ export const addCoupon = async (couponCode: string): Promise<any> => {
 // GET /v1/moedas - Listar moedas
 export const getCurrencies = async (): Promise<UniversalCurrency[]> => {
   try {
-    return await tryWithMultipleProxies((proxyUrl) => 
-      fetchUniversalGet<UniversalCurrency[]>('/moedas', proxyUrl));
+    return await fetchUniversalGet<UniversalCurrency[]>('/moedas');
   } catch (error) {
     console.error("Erro ao obter moedas:", error);
     toast.error("Erro ao obter lista de moedas");
@@ -287,8 +262,7 @@ export const getCurrencies = async (): Promise<UniversalCurrency[]> => {
 // PUT /v1/CancelamentoIndividual/:bilhete - Cancelamento individual
 export const cancelIndividual = async (bilhete: string, motivo: string): Promise<any> => {
   try {
-    return await tryWithMultipleProxies((proxyUrl) => 
-      fetchUniversalPut<any>(`/CancelamentoIndividual/${bilhete}`, { motivo }, proxyUrl));
+    return await fetchUniversalPut<any>(`/CancelamentoIndividual/${bilhete}`, { motivo });
   } catch (error) {
     console.error(`Erro ao cancelar bilhete ${bilhete}:`, error);
     toast.error("Erro ao realizar cancelamento");
@@ -299,8 +273,7 @@ export const cancelIndividual = async (bilhete: string, motivo: string): Promise
 // GET /v1/melius - Obter informações "melius"
 export const getMelius = async (): Promise<any> => {
   try {
-    return await tryWithMultipleProxies((proxyUrl) => 
-      fetchUniversalGet<any>('/melius', proxyUrl));
+    return await fetchUniversalGet<any>('/melius');
   } catch (error) {
     console.error("Erro ao obter informações melius:", error);
     toast.error("Erro ao obter informações adicionais");
@@ -311,8 +284,7 @@ export const getMelius = async (): Promise<any> => {
 // GET /v1/Agencia/ListarVendas - Listar vendas
 export const listAgencyVendas = async (): Promise<UniversalSale[]> => {
   try {
-    return await tryWithMultipleProxies((proxyUrl) => 
-      fetchUniversalGet<UniversalSale[]>('/Agencia/ListarVendas', proxyUrl));
+    return await fetchUniversalGet<UniversalSale[]>('/Agencia/ListarVendas');
   } catch (error) {
     console.error("Erro ao listar vendas da agência:", error);
     toast.error("Erro ao listar vendas");
@@ -323,8 +295,7 @@ export const listAgencyVendas = async (): Promise<UniversalSale[]> => {
 // POST /v1/Compras - Finalizar compra
 export const finalizePurchase = async (purchaseData: any): Promise<any> => {
   try {
-    return await tryWithMultipleProxies((proxyUrl) => 
-      fetchUniversalPost<any>('/Compras', purchaseData, proxyUrl));
+    return await fetchUniversalPost<any>('/Compras', purchaseData);
   } catch (error) {
     console.error("Erro ao finalizar compra:", error);
     toast.error("Erro ao finalizar compra");
@@ -335,8 +306,7 @@ export const finalizePurchase = async (purchaseData: any): Promise<any> => {
 // POST /v1/Cotacao - Cotação de seguro
 export const getQuote = async (payload: UniversalQuotePayload): Promise<UniversalQuoteResponse> => {
   try {
-    return await tryWithMultipleProxies((proxyUrl) => 
-      fetchUniversalPost<UniversalQuoteResponse>('/Cotacao', payload, proxyUrl));
+    return await fetchUniversalPost<UniversalQuoteResponse>('/Cotacao', payload);
   } catch (error) {
     console.error("Erro ao obter cotação:", error);
     toast.error("Erro ao obter cotação de seguro");
@@ -344,7 +314,7 @@ export const getQuote = async (payload: UniversalQuotePayload): Promise<Universa
   }
 };
 
-// Função para preparar o payload de cotação
+// Função para preparar o payload de cotação conforme documentação
 export const prepareQuotePayload = (params: SearchParams): UniversalQuotePayload => {
   const departureFormatted = new Date(params.departureDate).toISOString().split('T')[0];
   const returnFormatted = new Date(params.returnDate).toISOString().split('T')[0];
@@ -357,16 +327,22 @@ export const prepareQuotePayload = (params: SearchParams): UniversalQuotePayload
     };
   });
   
+  // Determinar o tipo de viagem baseado no destino
+  const tipoViagem = params.destination === "BR" ? 0 : 1; // 0 para nacional, 1 para internacional
+  
+  // Determinar os destinos baseado no destino selecionado
+  const destinos = [getDestinationCode(params.destination)];
+  
   return {
-    destinos: [getDestinationCode(params.destination)],
+    destinos: destinos,
     passageiros: passageiros,
     dataSaida: departureFormatted,
     dataRetorno: returnFormatted,
-    tipoViagem: 1, // Internacional
-    tipoTarifa: 1, // Folheto
+    tipoViagem: tipoViagem,
+    tipoTarifa: 1, // 1 para Folheto, 2 para Acordo
     produtoAvulso: false,
     cupom: "",
-    classificacoes: [1] // Default, pode ser ajustado
+    classificacoes: [1] // Default para folheto
   };
 };
 
@@ -415,8 +391,7 @@ function getDestinationCode(destination: string): string {
 export const getProductBenefits = async (productId: string): Promise<UniversalBenefit[]> => {
   try {
     // Primeiro tentamos buscar benefícios específicos do produto, se a API suportar isso
-    return await tryWithMultipleProxies((proxyUrl) => 
-      fetchUniversalGet<UniversalBenefit[]>(`/beneficios?produto=${productId}`, proxyUrl));
+    return await fetchUniversalGet<UniversalBenefit[]>(`/beneficios?produto=${productId}`);
   } catch (error) {
     console.error(`Erro ao obter benefícios do produto ${productId}:`, error);
     // Se falhar, tentamos buscar todos os benefícios

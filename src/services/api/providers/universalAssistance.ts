@@ -18,7 +18,6 @@ export const fetchUniversalAssistanceOffers = async (params: SearchParams): Prom
   try {
     console.log("Iniciando busca de dados da Universal Assistance");
     const apiConfig = getApiConfig();
-    console.log("Configuração da API:", apiConfig);
     
     if (!apiConfig.providerSettings?.username || !apiConfig.providerSettings?.password) {
       throw new Error("Credenciais da Universal Assistance não configuradas corretamente");
@@ -28,7 +27,7 @@ export const fetchUniversalAssistanceOffers = async (params: SearchParams): Prom
     const cotacaoPayload = prepareQuotePayload(params);
     console.log("Payload de cotação:", cotacaoPayload);
     
-    // Tentativa direta usando a API
+    // Realizar cotação direta com a API
     try {
       console.log("Realizando cotação direta com a API");
       const quoteData = await getQuote(cotacaoPayload);
@@ -74,20 +73,10 @@ export const fetchUniversalAssistanceOffers = async (params: SearchParams): Prom
       return generateMockOffers(5);
     } catch (apiError) {
       console.error("Erro na API de cotação:", apiError);
-      
-      // Verificamos se o erro está relacionado a CORS
-      if (!apiConfig.useProxy && apiError instanceof Error && 
-          (apiError.message.includes('CORS') || apiError.message.includes('Failed to fetch'))) {
-        toast.error("Erro de CORS detectado", {
-          description: "Considere ativar o proxy nas configurações da API",
-          duration: 8000
-        });
-      } else {
-        toast.error("Erro ao solicitar cotação", {
-          description: apiError instanceof Error ? apiError.message : "Erro desconhecido",
-          duration: 5000
-        });
-      }
+      toast.error("Erro ao solicitar cotação", {
+        description: apiError instanceof Error ? apiError.message : "Erro desconhecido",
+        duration: 5000
+      });
       
       // Se a tentativa falhar, retornamos dados mockados
       return generateMockOffers(5);

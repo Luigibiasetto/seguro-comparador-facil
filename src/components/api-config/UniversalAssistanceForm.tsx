@@ -3,8 +3,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Switch } from "@/components/ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface UniversalAssistanceFormProps {
   username: string;
@@ -13,21 +11,7 @@ interface UniversalAssistanceFormProps {
   setPassword: (value: string) => void;
   baseUrl: string;
   setBaseUrl: (value: string) => void;
-  useProxy: boolean;
-  setUseProxy: (value: boolean) => void;
-  proxyUrl: string;
-  setProxyUrl: (value: string) => void;
-  debugMode: boolean;
-  setDebugMode: (value: boolean) => void;
 }
-
-const PROXY_OPTIONS = [
-  { value: "https://api.allorigins.win/raw?url=", label: "allorigins.win (recomendado)" },
-  { value: "https://corsproxy.io/?", label: "corsproxy.io" },
-  { value: "https://cors-proxy.htmldriven.com/?url=", label: "htmldriven.com" },
-  { value: "https://cors.bridged.cc/", label: "bridged.cc" },
-  { value: "https://proxy.cors.sh/", label: "cors.sh" },
-];
 
 const UniversalAssistanceForm = ({ 
   username, 
@@ -35,13 +19,7 @@ const UniversalAssistanceForm = ({
   password, 
   setPassword,
   baseUrl,
-  setBaseUrl,
-  useProxy,
-  setUseProxy,
-  proxyUrl,
-  setProxyUrl,
-  debugMode,
-  setDebugMode
+  setBaseUrl
 }: UniversalAssistanceFormProps) => {
   return (
     <>
@@ -89,65 +67,6 @@ const UniversalAssistanceForm = ({
         </p>
       </div>
 
-      <div className="flex items-center space-x-2 mt-4">
-        <Switch 
-          id="useProxy" 
-          checked={useProxy}
-          onCheckedChange={setUseProxy}
-        />
-        <Label htmlFor="useProxy">Usar Proxy CORS</Label>
-      </div>
-      
-      {useProxy && (
-        <div className="space-y-2 mt-2">
-          <Label htmlFor="proxySelect">Serviço de Proxy CORS</Label>
-          <Select
-            value={proxyUrl}
-            onValueChange={setProxyUrl}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Selecione um serviço de proxy" />
-            </SelectTrigger>
-            <SelectContent>
-              {PROXY_OPTIONS.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          
-          <div className="mt-2">
-            <Label htmlFor="customProxy">Ou informe um proxy personalizado</Label>
-            <Input
-              id="customProxy"
-              placeholder="https://seu-proxy-personalizado.com/?"
-              value={PROXY_OPTIONS.some(opt => opt.value === proxyUrl) ? "" : proxyUrl}
-              onChange={(e) => {
-                if (e.target.value) {
-                  setProxyUrl(e.target.value);
-                }
-              }}
-              className="mt-1"
-            />
-          </div>
-          
-          <p className="text-xs text-muted-foreground mt-1">
-            Em caso de falha, o sistema tentará automaticamente os outros serviços de proxy.
-          </p>
-        </div>
-      )}
-      
-      <div className="flex items-center space-x-2 mt-4">
-        <Switch 
-          id="debugMode" 
-          checked={debugMode}
-          onCheckedChange={setDebugMode}
-        />
-        <Label htmlFor="debugMode">Modo de depuração</Label>
-        <span className="text-xs text-muted-foreground">(mostrar mensagens detalhadas de erro)</span>
-      </div>
-      
       <Alert className="mt-3 border-amber-500 bg-amber-50 text-amber-900 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-200">
         <AlertCircle className="h-4 w-4" />
         <AlertDescription>
@@ -158,11 +77,7 @@ const UniversalAssistanceForm = ({
             <li>Verifique se as credenciais estão corretas</li>
             <li>Confirme que a URL base está correta</li> 
             <li>As credenciais devem ser enviadas nos headers como <strong>"Login"</strong> e <strong>"Senha"</strong></li>
-            <li>Ative a opção "Usar Proxy CORS" para resolver problemas de CORS</li>
-            <li>Utilize o proxy <strong>allorigins.win</strong> para melhores resultados</li>
-            <li>Se o proxy atual não funcionar, selecione outro serviço de proxy</li>
             <li>Use o botão "Testar Conexão" para verificar se a API está acessível</li>
-            <li>Ative o modo de depuração para ver mensagens detalhadas de erro</li>
             <li>Certifique-se que o domínio do site publicado está na lista de permissões da API</li>
           </ul>
         </AlertDescription>
