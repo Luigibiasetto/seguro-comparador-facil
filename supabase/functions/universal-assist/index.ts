@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 
 // Configuração de headers CORS para permitir acesso da aplicação
@@ -162,6 +161,7 @@ serve(async (req) => {
         };
         
         console.log(`Fazendo requisição ${method} para ${apiBaseUrl}${endpoint}`);
+        console.log("Headers:", JSON.stringify(apiHeaders, null, 2));
         
         // Montar opções da requisição
         const options: RequestInit = {
@@ -171,7 +171,9 @@ serve(async (req) => {
         
         // Adicionar body se for POST ou PUT
         if ((method === 'POST' || method === 'PUT') && body) {
-          options.body = JSON.stringify(method === 'POST' ? body.payload || body : body);
+          const requestBody = method === 'POST' ? body.payload || body : body;
+          options.body = JSON.stringify(requestBody);
+          console.log("Request body:", JSON.stringify(requestBody, null, 2));
         }
         
         // Fazer a requisição
@@ -198,6 +200,7 @@ serve(async (req) => {
         let apiData;
         try {
           apiData = await apiResponse.json();
+          console.log("API Response:", JSON.stringify(apiData, null, 2));
         } catch (e) {
           // Se não for JSON, tentar obter como texto
           const text = await apiResponse.text();
@@ -257,6 +260,19 @@ serve(async (req) => {
           } else if (Array.isArray(apiData)) {
             products = apiData;
           }
+          
+          // Log detalhado dos produtos e seus valores
+          console.log("Produtos encontrados:", products.length);
+          products.forEach((product, index) => {
+            console.log(`Produto ${index + 1}:`, {
+              id: product.codigo,
+              name: product.nome || product.descricao,
+              valorBrutoBrl: product.valorBrutoBrl,
+              preco: product.preco,
+              valorTotalBrl: product.valorTotalBrl,
+              valorEmDinheiro: product.valorEmDinheiro
+            });
+          });
           
           if (products.length > 0) {
             const offers = processPlans(products);

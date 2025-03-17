@@ -17,6 +17,28 @@ export const getQuote = async (payload: UniversalQuotePayload): Promise<Universa
     const response = await fetchUniversalPost<UniversalQuoteResponse>('/Cotacao', payload);
     console.log("Resposta da cotação:", response);
     
+    // Log detalhado dos produtos e seus valores para debugging
+    if (response.produtos && response.produtos.length > 0) {
+      console.log("Detalhamento dos produtos recebidos:");
+      response.produtos.forEach((produto, index) => {
+        console.log(`Produto ${index + 1} - ${produto.nome || 'Sem nome'}:`);
+        console.log(` - Código: ${produto.codigo}`);
+        console.log(` - valorBrutoBrl: ${produto.valorBrutoBrl}`);
+        console.log(` - preco: ${produto.preco}`);
+        console.log(` - valorTotalBrl: ${produto.valorTotalBrl}`);
+        console.log(` - valorEmDinheiro: ${produto.valorEmDinheiro}`);
+        
+        // Verificar onde o valor pode estar
+        const possibleValues = [];
+        if (produto.valorBrutoBrl !== undefined) possibleValues.push(["valorBrutoBrl", produto.valorBrutoBrl]);
+        if (produto.preco !== undefined) possibleValues.push(["preco", produto.preco]);
+        if (produto.valorTotalBrl !== undefined) possibleValues.push(["valorTotalBrl", produto.valorTotalBrl]);
+        if (produto.valorEmDinheiro !== undefined) possibleValues.push(["valorEmDinheiro", produto.valorEmDinheiro]);
+        
+        console.log(` - Valores encontrados:`, possibleValues);
+      });
+    }
+    
     return response;
   } catch (error) {
     console.error("Erro ao obter cotação:", error);

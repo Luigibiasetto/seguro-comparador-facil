@@ -2,6 +2,42 @@
 import { InsuranceOffer } from "../../../api/types";
 import { UniversalProduct, UniversalBenefit } from "./types";
 
+// Função para extrair o valor correto do produto
+function extractPrice(product: UniversalProduct): number {
+  // Verificamos em ordem específica baseada na documentação
+  if (typeof product.valorBrutoBrl === 'number' && product.valorBrutoBrl > 0) {
+    return product.valorBrutoBrl;
+  }
+  
+  if (typeof product.preco === 'number' && product.preco > 0) {
+    return product.preco;
+  }
+  
+  // Também verificamos outros campos que podem conter o valor
+  if (typeof product.valorTotalBrl === 'number' && product.valorTotalBrl > 0) {
+    return product.valorTotalBrl;
+  }
+  
+  if (typeof product.valorEmDinheiro === 'number' && product.valorEmDinheiro > 0) {
+    return product.valorEmDinheiro;
+  }
+  
+  // Tentar converter de string para número se estivermos lidando com strings
+  if (typeof product.preco === 'string') {
+    const parsedPrice = parseFloat(product.preco);
+    if (!isNaN(parsedPrice) && parsedPrice > 0) return parsedPrice;
+  }
+  
+  if (typeof product.valorBrutoBrl === 'string') {
+    const parsedValue = parseFloat(product.valorBrutoBrl);
+    if (!isNaN(parsedValue) && parsedValue > 0) return parsedValue;
+  }
+  
+  // Se não encontrarmos valor válido, retornamos um valor mockado aleatório
+  console.warn(`Nenhum valor válido encontrado para o produto ${product.codigo || 'desconhecido'}. Usando valor mockado.`);
+  return Math.floor(Math.random() * 300) + 100;
+}
+
 // Função para extrair coberturas
 function extractCoverage(product: UniversalProduct, type: string, defaultValue: number): number {
   // Tentar extrair cobertura dos diferentes formatos possíveis de resposta
@@ -47,21 +83,36 @@ function extractBenefits(product: UniversalProduct): string[] {
 
 // Função para processar planos
 export const processPlans = async (products: UniversalProduct[]): Promise<InsuranceOffer[]> => {
-  return products.map((product: UniversalProduct, index: number) => ({
-    id: product.codigo || `universal-${Math.random().toString(36).substring(2, 9)}`,
-    providerId: "universal-assist",
-    name: product.nome || product.descricao || `Plano Universal ${index + 1}`,
-    price: product.valorBrutoBrl || parseFloat(product.preco?.toString() || "0") || Math.floor(Math.random() * 300) + 100,
-    coverage: {
-      medical: extractCoverage(product, 'medical', 40000),
-      baggage: extractCoverage(product, 'baggage', 1000),
-      cancellation: extractCoverage(product, 'cancellation', 2000),
-      delay: extractCoverage(product, 'delay', 200),
-    },
-    benefits: extractBenefits(product),
-    rating: 4.5 + (Math.random() * 0.5),
-    recommended: index === 0,
-  }));
+  return products.map((product: UniversalProduct, index: number) => {
+    // Log detalhado para cada produto antes de extrair o valor
+    console.log(`Processando produto ${index + 1}:`, {
+      id: product.codigo,
+      name: product.nome || product.descricao,
+      valorBrutoBrl: product.valorBrutoBrl,
+      preco: product.preco,
+      valorTotalBrl: product.valorTotalBrl,
+      valorEmDinheiro: product.valorEmDinheiro
+    });
+    
+    const extractedPrice = extractPrice(product);
+    console.log(`Valor extraído para o produto ${product.codigo || index}: ${extractedPrice}`);
+    
+    return {
+      id: product.codigo || `universal-${Math.random().toString(36).substring(2, 9)}`,
+      providerId: "universal-assist",
+      name: product.nome || product.descricao || `Plano Universal ${index + 1}`,
+      price: extractedPrice,
+      coverage: {
+        medical: extractCoverage(product, 'medical', 40000),
+        baggage: extractCoverage(product, 'baggage', 1000),
+        cancellation: extractCoverage(product, 'cancellation', 2000),
+        delay: extractCoverage(product, 'delay', 200),
+      },
+      benefits: extractBenefits(product),
+      rating: 4.5 + (Math.random() * 0.5),
+      recommended: index === 0,
+    };
+  });
 };
 
 // Função para gerar ofertas mockadas

@@ -92,6 +92,13 @@ export interface UniversalQuotePayload {
   produtoAvulso: boolean;
   cupom: string;
   classificacoes: number[];
+  valorTotalPacote?: number;
+  codigoOperacao?: number;
+  canalDeVenda?: number;
+  login?: string;
+  senha?: string;
+  multiviagem?: boolean;
+  idCotacao?: number;
 }
 
 // Product interface for quote responses
@@ -99,13 +106,19 @@ export interface UniversalProduct {
   codigo: string;
   nome: string;
   descricao?: string;
-  preco: number;
-  valorBrutoBrl?: number;
-  valorBrutoUsd?: number;
-  valorEmDinheiro?: number;
+  preco: number | string;
+  valorBrutoBrl?: number | string;
+  valorBrutoUsd?: number | string;
+  valorTotalBrl?: number | string;
+  valorEmDinheiro?: number | string;
   coberturas?: any;
   beneficios?: any[];
   caracteristicas?: any[];
+  // Campos específicos para coberturas que podem aparecer
+  coberturaMedical?: string | number;
+  coberturaBaggage?: string | number;
+  coberturaCancellation?: string | number;
+  coberturaDelay?: string | number;
 }
 
 // Quote response interface
