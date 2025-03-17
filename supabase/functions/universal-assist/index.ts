@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 
 // Configuração de headers CORS para permitir acesso da aplicação
@@ -27,24 +26,50 @@ function handleCors(req: Request) {
 // Função para autenticar na API e obter um token
 async function authenticate() {
   console.log("Iniciando autenticação com a Universal Assistance");
+  console.log(`Usando credenciais: usuário=${username}, API Base=${apiBaseUrl}`);
   
   const basicAuth = btoa(`${username}:${password}`);
+  
+  // Define endpoints mais específicos com base na documentação
   const authEndpoints = [
     '/auth/token',
     '/auth',
     '/token',
-    '/login'
+    '/login',
+    '/oauth/token',
+    '/api/auth',
+    '/api/login',
+    '/api/v1/auth',
+    '/v1/auth'
   ];
   
   let token = null;
   let authError = null;
+  let lastResponseDetails = null;
   
   // Tentar diversos endpoints de autenticação
   for (const endpoint of authEndpoints) {
     try {
-      console.log(`Tentando autenticação em: ${apiBaseUrl}${endpoint}`);
+      const fullEndpointUrl = `${apiBaseUrl}${endpoint}`;
+      console.log(`Tentando autenticação em: ${fullEndpointUrl}`);
       
-      const authResponse = await fetch(`${apiBaseUrl}${endpoint}`, {
+      // Primeiro, verificar se o endpoint existe
+      try {
+        const checkResponse = await fetch(fullEndpointUrl, {
+          method: 'HEAD',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+        });
+        console.log(`Verificação do endpoint ${endpoint}: Status ${checkResponse.status}`);
+      } catch (checkError) {
+        console.log(`Erro ao verificar endpoint ${endpoint}:`, checkError);
+      }
+      
+      // Tentar diferentes métodos de autenticação
+      // 1. Basic Auth
+      const authResponse = await fetch(fullEndpointUrl, {
         method: 'POST',
         headers: {
           'Authorization': `Basic ${basicAuth}`,
@@ -53,12 +78,39 @@ async function authenticate() {
         },
       });
       
-      console.log(`Status da resposta: ${authResponse.status}`);
+      console.log(`Status da resposta para ${endpoint}: ${authResponse.status}`);
+      
+      // Armazenar detalhes da última resposta
+      try {
+        const responseBody = await authResponse.text();
+        console.log(`Corpo da resposta (${endpoint}): ${responseBody.substring(0, 200)}${responseBody.length > 200 ? '...' : ''}`);
+        lastResponseDetails = {
+          endpoint,
+          status: authResponse.status,
+          body: responseBody
+        };
+      } catch (bodyError) {
+        console.log(`Erro ao ler corpo da resposta de ${endpoint}:`, bodyError);
+        lastResponseDetails = {
+          endpoint,
+          status: authResponse.status,
+          error: "Erro ao ler corpo"
+        };
+      }
       
       if (authResponse.ok) {
         try {
-          const responseData = await authResponse.json();
-          console.log("Dados de autenticação recebidos");
+          // Tentar novamente como JSON
+          const responseData = await fetch(fullEndpointUrl, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Basic ${basicAuth}`,
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+            },
+          }).then(r => r.json());
+          
+          console.log("Dados de autenticação recebidos:", JSON.stringify(responseData).substring(0, 200));
           
           // Extrair token de diferentes formatos de resposta
           token = responseData.token || 
@@ -83,13 +135,46 @@ async function authenticate() {
         }
       } else {
         console.log(`Autenticação falhou para ${endpoint}. Status: ${authResponse.status}`);
-        try {
-          const errorBody = await authResponse.text();
-          console.log(`Corpo da resposta de erro: ${errorBody}`);
-        } catch (e) {
-          console.log("Não foi possível ler o corpo da resposta de erro");
-        }
       }
+      
+      // 2. Tentar com JSON no body
+      try {
+        const jsonAuthResponse = await fetch(fullEndpointUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+          body: JSON.stringify({
+            username: username,
+            password: password
+          }),
+        });
+        
+        console.log(`Status da resposta JSON para ${endpoint}: ${jsonAuthResponse.status}`);
+        
+        if (jsonAuthResponse.ok) {
+          try {
+            const jsonResponseData = await jsonAuthResponse.json();
+            console.log("Dados de autenticação JSON recebidos:", JSON.stringify(jsonResponseData).substring(0, 200));
+            
+            token = jsonResponseData.token || 
+                   jsonResponseData.access_token || 
+                   jsonResponseData.accessToken || 
+                   (jsonResponseData.data && jsonResponseData.data.token);
+                   
+            if (token) {
+              console.log("Token obtido com sucesso via JSON auth");
+              return { success: true, token };
+            }
+          } catch (jsonDataError) {
+            console.log("Erro ao processar resposta JSON:", jsonDataError);
+          }
+        }
+      } catch (jsonAuthError) {
+        console.log(`Erro ao tentar autenticação JSON em ${endpoint}:`, jsonAuthError);
+      }
+      
     } catch (error) {
       console.log(`Erro ao tentar autenticação em ${endpoint}:`, error);
       authError = error;
@@ -98,7 +183,8 @@ async function authenticate() {
   
   return { 
     success: false, 
-    error: authError ? authError.message : "Não foi possível autenticar com nenhum dos endpoints"
+    error: authError ? authError.message : "Não foi possível autenticar com nenhum dos endpoints",
+    lastResponseDetails
   };
 }
 
@@ -333,6 +419,97 @@ function generateMockOffers(count: number) {
   return mockOffers;
 }
 
+// Função para testar conectividade da API
+async function testApiConnectivity() {
+  console.log("Iniciando teste de conectividade da API Universal Assistance");
+  
+  // Tentar acessar a raiz da API para verificar se está online
+  try {
+    console.log(`Verificando conexão básica para: ${apiBaseUrl}`);
+    const rootResponse = await fetch(apiBaseUrl, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
+    });
+    
+    console.log(`Resposta da API raiz: Status ${rootResponse.status}`);
+    
+    let responseText = "";
+    try {
+      responseText = await rootResponse.text();
+      console.log(`Corpo da resposta: ${responseText.substring(0, 200)}`);
+    } catch (textError) {
+      console.log("Erro ao ler corpo da resposta:", textError);
+    }
+    
+    // Verificar se conseguimos conectar
+    const isConnected = rootResponse.status !== 0;
+    
+    if (isConnected) {
+      console.log("Conexão básica com a API estabelecida");
+      
+      // Verificar documentação da API se disponível
+      try {
+        const docsEndpoints = ['/docs', '/swagger', '/api-docs', '/openapi.json'];
+        for (const docEndpoint of docsEndpoints) {
+          try {
+            const docResponse = await fetch(`${apiBaseUrl}${docEndpoint}`, {
+              method: 'GET',
+              headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+              },
+            });
+            
+            if (docResponse.ok) {
+              console.log(`Documentação da API encontrada em: ${docEndpoint}`);
+              break;
+            }
+          } catch (docError) {
+            console.log(`Erro ao verificar documentação em ${docEndpoint}:`, docError);
+          }
+        }
+      } catch (docsError) {
+        console.log("Erro ao verificar documentação da API:", docsError);
+      }
+      
+      // Tentar autenticação
+      const authResult = await authenticate();
+      
+      if (authResult.success) {
+        return {
+          success: true,
+          message: "Conectado com sucesso à API",
+          authStatus: "Autenticado com sucesso"
+        };
+      } else {
+        return {
+          success: false,
+          message: "Conectado à API, mas falha na autenticação",
+          authError: authResult.error,
+          authDetails: authResult.lastResponseDetails
+        };
+      }
+    } else {
+      console.log("Falha na conexão básica com a API");
+      return {
+        success: false,
+        message: "Não foi possível conectar à API",
+        details: "Falha na conexão básica"
+      };
+    }
+  } catch (error) {
+    console.error("Erro durante teste de conectividade:", error);
+    return {
+      success: false,
+      message: "Erro ao testar conectividade",
+      error: error instanceof Error ? error.message : "Erro desconhecido"
+    };
+  }
+}
+
 // Função principal para processar as requisições
 serve(async (req) => {
   // Lidar com requisições CORS preflight
@@ -425,18 +602,41 @@ serve(async (req) => {
       console.log("Testando conexão com a API");
       
       try {
-        const authResult = await authenticate();
-        return new Response(
-          JSON.stringify({ 
-            success: authResult.success, 
-            message: authResult.success ? "Conexão bem sucedida" : "Falha na conexão",
-            details: authResult.success ? "Token obtido com sucesso" : authResult.error
-          }),
-          { 
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
-            status: 200 
-          }
-        );
+        // Primeiro teste de conectividade básica
+        const connectivityTest = await testApiConnectivity();
+        
+        if (connectivityTest.success) {
+          return new Response(
+            JSON.stringify({ 
+              success: true, 
+              message: "Conexão bem sucedida",
+              details: connectivityTest.authStatus || "API acessível"
+            }),
+            { 
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
+              status: 200 
+            }
+          );
+        } else {
+          console.log("Falha no teste de conectividade:", connectivityTest);
+          
+          // Tentar autenticação como último recurso
+          const authResult = await authenticate();
+          
+          return new Response(
+            JSON.stringify({ 
+              success: authResult.success, 
+              message: authResult.success ? "Conexão bem sucedida" : "Falha na conexão",
+              details: authResult.success ? "Token obtido com sucesso" : authResult.error,
+              connectivityResult: connectivityTest,
+              lastResponseDetails: authResult.lastResponseDetails
+            }),
+            { 
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
+              status: 200 
+            }
+          );
+        }
       } catch (error) {
         console.error("Erro ao testar conexão:", error);
         return new Response(

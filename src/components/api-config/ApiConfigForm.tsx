@@ -1,13 +1,15 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { DialogClose, DialogFooter } from "@/components/ui/dialog";
-import { Check, Bug, Database } from "lucide-react";
+import { Check, Bug, Database, AlertTriangle, Globe } from "lucide-react";
 import { toast } from "sonner";
 import { configureInsuranceAPI, getApiConfig } from "@/services/api/config";
 import UniversalAssistanceForm from "./UniversalAssistanceForm";
 import ProviderSelect from "./ProviderSelect";
 import GenericApiForm from "./GenericApiForm";
 import { supabase } from "@/integrations/supabase/client";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface ApiConfigFormProps {
   onOpenChange: (open: boolean) => void;
@@ -23,9 +25,14 @@ const ApiConfigForm = ({ onOpenChange }: ApiConfigFormProps) => {
   const [proxyUrl, setProxyUrl] = useState("https://api.allorigins.win/raw?url=");
   const [debugMode, setDebugMode] = useState(true);
   const [useSupabase, setUseSupabase] = useState(true);
+  const [testingConnection, setTestingConnection] = useState(false);
+  const [testResults, setTestResults] = useState<any>(null);
   
   const testConnection = async () => {
     try {
+      setTestingConnection(true);
+      setTestResults(null);
+      
       toast.info("Testando conexão com a API...", {
         id: "api-test",
       });
@@ -44,10 +51,20 @@ const ApiConfigForm = ({ onOpenChange }: ApiConfigFormProps) => {
               id: "api-test",
               description: error.message
             });
+            setTestResults({
+              success: false,
+              source: "supabase",
+              error: error.message
+            });
           } else if (data && data.success) {
             toast.success("Conexão via Supabase bem-sucedida!", {
               id: "api-test",
               description: data.details || "Autenticação realizada com sucesso"
+            });
+            setTestResults({
+              success: true,
+              source: "supabase",
+              details: data
             });
             return;
           } else {
@@ -55,12 +72,22 @@ const ApiConfigForm = ({ onOpenChange }: ApiConfigFormProps) => {
               id: "api-test",
               description: data?.details || "Erro desconhecido"
             });
+            setTestResults({
+              success: false,
+              source: "supabase",
+              details: data
+            });
           }
         } catch (edgeFunctionError) {
           console.error("Erro ao invocar Edge Function:", edgeFunctionError);
           toast.error("Erro ao chamar Edge Function", {
             id: "api-test",
             description: "Verifique se a função está implantada corretamente"
+          });
+          setTestResults({
+            success: false,
+            source: "supabase",
+            error: edgeFunctionError instanceof Error ? edgeFunctionError.message : "Erro desconhecido"
           });
         }
       }
@@ -110,6 +137,11 @@ const ApiConfigForm = ({ onOpenChange }: ApiConfigFormProps) => {
           toast.error("Falha no teste de conectividade básica. Verifique sua conexão com a internet.", {
             id: "api-test",
           });
+          setTestResults({
+            success: false,
+            source: "direct",
+            error: "Falha na conectividade básica"
+          });
           return;
         }
         
@@ -120,6 +152,11 @@ const ApiConfigForm = ({ onOpenChange }: ApiConfigFormProps) => {
       } catch (connectError) {
         toast.error("Problema de conectividade básica detectado. Verifique sua conexão de internet.", {
           id: "api-test",
+        });
+        setTestResults({
+          success: false,
+          source: "direct",
+          error: "Problema de conectividade básica"
         });
         return;
       }
@@ -153,10 +190,20 @@ const ApiConfigForm = ({ onOpenChange }: ApiConfigFormProps) => {
             id: "api-test",
             description: "A API está acessível. Códigos 401/403 são esperados se autenticação for necessária."
           });
+          setTestResults({
+            success: true,
+            source: "direct",
+            status: status
+          });
         } else {
           toast.warning(`API respondeu com status: ${status}`, {
             id: "api-test",
             description: "A API foi contactada, mas retornou um status inesperado."
+          });
+          setTestResults({
+            success: false,
+            source: "direct",
+            status: status
           });
         }
         
@@ -169,8 +216,17 @@ const ApiConfigForm = ({ onOpenChange }: ApiConfigFormProps) => {
             description: responseText.substring(0, 200) + (responseText.length > 200 ? "..." : ""),
             duration: 10000
           });
+          
+          setTestResults(prev => ({
+            ...prev,
+            responseText: responseText.substring(0, 500)
+          }));
         } catch (textError) {
           console.error("Erro ao obter texto da resposta:", textError);
+          setTestResults(prev => ({
+            ...prev,
+            textError: textError instanceof Error ? textError.message : "Erro ao ler resposta"
+          }));
         }
         
       } catch (apiError) {
@@ -180,6 +236,12 @@ const ApiConfigForm = ({ onOpenChange }: ApiConfigFormProps) => {
           toast.error("Falha ao conectar usando o proxy atual", {
             id: "api-test",
             description: "Tente outro serviço de proxy ou desative o proxy se a API permitir acesso direto."
+          });
+          
+          setTestResults({
+            success: false,
+            source: "direct",
+            error: apiError instanceof Error ? apiError.message : "Erro ao conectar com proxy"
           });
           
           // Try without proxy as a last resort
@@ -193,16 +255,30 @@ const ApiConfigForm = ({ onOpenChange }: ApiConfigFormProps) => {
               toast.success("Conexão direta com a API bem-sucedida!", {
                 description: "O proxy pode ser desnecessário. Tente desativar a opção 'Usar Proxy CORS'."
               });
+              setTestResults(prev => ({
+                ...prev,
+                directSuccess: true,
+                directStatus: directResponse.status
+              }));
             }
           } catch (directError) {
             toast.error("Também falhou sem proxy. Possível problema de CORS ou API indisponível.", {
               duration: 8000
             });
+            setTestResults(prev => ({
+              ...prev,
+              directError: directError instanceof Error ? directError.message : "Erro de acesso direto"
+            }));
           }
         } else {
           toast.error("Falha na conexão direta com a API", {
             id: "api-test",
             description: "Tente ativar o proxy CORS para resolver possíveis problemas de CORS."
+          });
+          setTestResults({
+            success: false,
+            source: "direct",
+            error: apiError instanceof Error ? apiError.message : "Erro de conexão direta"
           });
         }
       }
@@ -212,6 +288,13 @@ const ApiConfigForm = ({ onOpenChange }: ApiConfigFormProps) => {
         id: "api-test",
         description: error instanceof Error ? error.message : "Erro desconhecido"
       });
+      setTestResults({
+        success: false,
+        source: "test",
+        error: error instanceof Error ? error.message : "Erro desconhecido"
+      });
+    } finally {
+      setTestingConnection(false);
     }
   };
   
@@ -357,15 +440,101 @@ const ApiConfigForm = ({ onOpenChange }: ApiConfigFormProps) => {
         </div>
       )}
 
+      {testResults && (
+        <Alert className={`p-4 ${testResults.success ? 'bg-green-50 border-green-200 text-green-800' : 'bg-amber-50 border-amber-200 text-amber-800'}`}>
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>
+            <div className="text-xs space-y-1">
+              <p className="font-medium">
+                {testResults.success ? 
+                  "✅ Conexão bem-sucedida" : 
+                  "⚠️ Problemas de conexão detectados"}
+              </p>
+              
+              {testResults.source && (
+                <p>
+                  Método: {testResults.source === "supabase" ? 
+                    "Supabase Edge Function" : 
+                    "Conexão direta/proxy"}
+                </p>
+              )}
+              
+              {testResults.status && (
+                <p>Status HTTP: {testResults.status}</p>
+              )}
+              
+              {testResults.error && (
+                <p>Erro: {testResults.error}</p>
+              )}
+              
+              {testResults.details && testResults.details.details && (
+                <p>Detalhes: {testResults.details.details}</p>
+              )}
+              
+              {testResults.responseText && (
+                <div>
+                  <p className="font-medium mt-2">Resposta da API:</p>
+                  <pre className="text-xs bg-gray-100 p-2 rounded mt-1 overflow-auto max-h-32">
+                    {testResults.responseText}
+                  </pre>
+                </div>
+              )}
+              
+              {!testResults.success && (
+                <div className="mt-2 pt-2 border-t border-amber-200">
+                  <p className="font-medium">Sugestões:</p>
+                  <ul className="list-disc pl-4 mt-1">
+                    <li>Verifique se a URL base está correta</li>
+                    <li>Confirme as credenciais de acesso</li>
+                    {!useSupabase && (
+                      <li>Ative a opção "Usar Supabase Edge Function"</li>
+                    )}
+                    {useSupabase && testResults.source === "supabase" && (
+                      <li>Desative a opção "Usar Supabase Edge Function" e tente com proxy CORS</li>
+                    )}
+                    {!useProxy && (
+                      <li>Ative a opção "Usar Proxy CORS"</li>
+                    )}
+                    {useProxy && (
+                      <li>Tente outro serviço de proxy CORS</li>
+                    )}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </AlertDescription>
+        </Alert>
+      )}
+
       <div className="flex justify-between items-center pt-2">
         <Button 
           type="button" 
           variant="outline" 
           onClick={testConnection}
           className="gap-1"
+          disabled={testingConnection}
         >
-          <Bug className="w-4 h-4" />
-          Testar Conexão
+          {testingConnection ? (
+            <>
+              <span className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full mr-1"></span>
+              Testando...
+            </>
+          ) : (
+            <>
+              <Bug className="w-4 h-4" />
+              Testar Conexão
+            </>
+          )}
+        </Button>
+        
+        <Button 
+          type="button" 
+          variant="outline" 
+          onClick={() => window.open("https://jsonplaceholder.typicode.com/todos/1", "_blank")}
+          className="gap-1 text-xs"
+        >
+          <Globe className="w-3 h-3" />
+          Testar Internet
         </Button>
       </div>
 
