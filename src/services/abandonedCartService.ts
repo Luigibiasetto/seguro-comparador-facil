@@ -25,23 +25,22 @@ export const saveAbandonedCart = async (
     if (existingCarts && existingCarts.length > 0) {
       const cartId = existingCarts[0].id;
       
-      const cartData: Partial<AbandonedCart> = {
+      const cartData = {
         origin: searchParams.origin,
         destination: searchParams.destination,
         departure_date: searchParams.departureDate,
         return_date: searchParams.returnDate,
         passengers: searchParams.passengers,
-        updated_at: new Date().toISOString()
       };
 
-      if (customerInfo) cartData.customer_info = customerInfo;
-      if (offer) cartData.offer_data = offer;
-      if (provider) cartData.provider_data = provider;
+      if (customerInfo) cartData['customer_info'] = customerInfo;
+      if (offer) cartData['offer_data'] = offer;
+      if (provider) cartData['provider_data'] = provider;
 
       // Verificar se o usuário está autenticado
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
-        cartData.user_id = session.user.id;
+        cartData['user_id'] = session.user.id;
       }
 
       const { error } = await supabase
@@ -58,7 +57,7 @@ export const saveAbandonedCart = async (
       return true;
     } else {
       // Criação de um novo carrinho abandonado
-      const cartData: Omit<AbandonedCart, 'id' | 'created_at'> = {
+      const cartData = {
         email: searchParams.email,
         phone: searchParams.phone,
         origin: searchParams.origin,
@@ -69,14 +68,14 @@ export const saveAbandonedCart = async (
         recovered: false
       };
 
-      if (customerInfo) cartData.customer_info = customerInfo;
-      if (offer) cartData.offer_data = offer;
-      if (provider) cartData.provider_data = provider;
+      if (customerInfo) cartData['customer_info'] = customerInfo;
+      if (offer) cartData['offer_data'] = offer;
+      if (provider) cartData['provider_data'] = provider;
 
       // Verificar se o usuário está autenticado
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
-        cartData.user_id = session.user.id;
+        cartData['user_id'] = session.user.id;
       }
 
       const { error } = await supabase

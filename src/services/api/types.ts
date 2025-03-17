@@ -151,6 +151,7 @@ export interface AbandonedCart {
   offer_data?: InsuranceOffer;
   provider_data?: InsuranceProvider;
   created_at?: string;
+  updated_at?: string; // Adicionado para compatibilidade com o serviço
   recovered: boolean;
 }
 
