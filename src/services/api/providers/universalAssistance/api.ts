@@ -1,4 +1,3 @@
-
 import { toast } from "sonner";
 import { getApiConfig, getApiUrl } from "../../config";
 import { calculateTripDuration } from "../../utils";
@@ -44,8 +43,7 @@ export const fetchUniversalGet = async <T>(endpoint: string): Promise<T> => {
   
   const response = await fetch(url, {
     method: 'GET',
-    headers: headers,
-    mode: 'cors'
+    headers: headers
   });
   
   if (!response.ok) {
@@ -69,8 +67,7 @@ export const fetchUniversalPost = async <T>(endpoint: string, payload: any): Pro
   const response = await fetch(url, {
     method: 'POST',
     headers: headers,
-    body: JSON.stringify(payload),
-    mode: 'cors'
+    body: JSON.stringify(payload)
   });
   
   if (!response.ok) {
@@ -94,8 +91,7 @@ export const fetchUniversalPut = async <T>(endpoint: string, payload: any): Prom
   const response = await fetch(url, {
     method: 'PUT',
     headers: headers,
-    body: JSON.stringify(payload),
-    mode: 'cors'
+    body: JSON.stringify(payload)
   });
   
   if (!response.ok) {
@@ -350,7 +346,8 @@ export const prepareQuotePayload = (params: SearchParams): UniversalQuotePayload
   });
   
   // Determinar o tipo de viagem baseado no destino
-  const tipoViagem = params.destination === "BR" ? 0 : 1; // 0 para nacional, 1 para internacional
+  // 0 para nacional, 1 para internacional
+  const tipoViagem = params.destination === "BR" ? 0 : 1;
   
   // Determinar os destinos baseado no destino selecionado
   const destinos = [getDestinationCode(params.destination)];
@@ -361,10 +358,10 @@ export const prepareQuotePayload = (params: SearchParams): UniversalQuotePayload
     dataSaida: departureFormatted,
     dataRetorno: returnFormatted,
     tipoViagem: tipoViagem,
-    tipoTarifa: 1, // 1 para Folheto, 2 para Acordo
+    tipoTarifa: 1,  // 1 para Folheto (padrão)
     produtoAvulso: false,
     cupom: "",
-    classificacoes: [1] // Default para folheto
+    classificacoes: [1]  // 1 = "Todos" conforme documentação
   };
 };
 

@@ -68,11 +68,3 @@ export const getApiUrl = (endpoint: string): string => {
   
   return fullUrl;
 };
-
-// Helper function para fazer requisição direta (sem proxy)
-export const tryWithMultipleProxies = async <T>(
-  fetchFunction: (proxyUrl: string) => Promise<T>
-): Promise<T> => {
-  // Com a configuração atual, sempre chama diretamente sem proxy
-  return fetchFunction("");
-};

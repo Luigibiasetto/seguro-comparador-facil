@@ -1,4 +1,3 @@
-
 import { toast } from "sonner";
 import { getApiConfig } from "../config";
 import { InsuranceOffer, SearchParams } from "../types";
@@ -28,9 +27,7 @@ export const fetchUniversalAssistanceOffers = async (params: SearchParams): Prom
     // Log configuração atual
     console.log("Configuração API:", {
       baseUrl: apiConfig.baseUrl,
-      username: apiConfig.providerSettings.username,
-      useProxy: apiConfig.useProxy,
-      debugMode: apiConfig.debugMode
+      username: apiConfig.providerSettings.username
     });
 
     // Pré-validação: buscar classificações e tipos de viagem para verificar a conexão
@@ -66,21 +63,6 @@ export const fetchUniversalAssistanceOffers = async (params: SearchParams): Prom
       // Extrair os produtos/planos conforme documentação
       if (quoteData.produtos && quoteData.produtos.length > 0) {
         console.log(`Produtos encontrados (${quoteData.produtos.length}):`, quoteData.produtos);
-        
-        // Enriquecer produtos com benefícios específicos
-        for (const product of quoteData.produtos) {
-          try {
-            if (product.id) {
-              const benefits = await getProductBenefits(product.id);
-              if (benefits && benefits.length > 0) {
-                product.beneficios = benefits;
-              }
-            }
-          } catch (benefitError) {
-            console.error(`Erro ao buscar benefícios do produto ${product.id}:`, benefitError);
-          }
-        }
-        
         return await processPlans(quoteData.produtos);
       } 
       // Verificar campo 'planos' se 'produtos' não existir
@@ -93,7 +75,7 @@ export const fetchUniversalAssistanceOffers = async (params: SearchParams): Prom
         console.log(`Array de produtos/planos encontrado (${quoteData.length}):`, quoteData);
         return await processPlans(quoteData);
       }
-      // Se não encontrar produtos estruturados, mas tiver campo de benefícios genéricos
+      // Se não encontrar produtos estruturados mas a API retornar benefícios genéricos
       else if (quoteData.beneficios && Array.isArray(quoteData.beneficios)) {
         console.log("Nenhum produto estruturado encontrado, mas há benefícios. Gerando oferta genérica.");
         
@@ -109,7 +91,10 @@ export const fetchUniversalAssistanceOffers = async (params: SearchParams): Prom
       }
       
       // Se não encontrar produtos, exibir mensagem e usar dados mockados
-      toast.warning("Nenhum produto encontrado na resposta da API", { 
+      const errorMessage = quoteData.message || "Nenhum produto encontrado na resposta da API";
+      console.warn(errorMessage);
+      
+      toast.warning(errorMessage, { 
         description: "Exibindo dados de exemplo",
         duration: 8000
       });

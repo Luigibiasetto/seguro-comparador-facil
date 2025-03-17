@@ -33,7 +33,7 @@ export const extractCoverage = (product: UniversalProduct, type: string, default
         c.nome?.toLowerCase().includes(type));
         
       if (cobertura) {
-        return parseFloat(cobertura.valor || cobertura.valorCoberto || "0") || defaultValue;
+        return parseFloat(cobertura.valor?.toString() || cobertura.valorCoberto?.toString() || "0") || defaultValue;
       }
     } else if (typeof product.coberturas === 'object') {
       // Tenta buscar no formato de objeto
@@ -44,7 +44,7 @@ export const extractCoverage = (product: UniversalProduct, type: string, default
         const value = product.coberturas[coverageKey];
         return typeof value === 'number' ? value : 
                typeof value === 'string' ? parseFloat(value) || defaultValue :
-               typeof value === 'object' && value.valor ? parseFloat(value.valor) || defaultValue :
+               typeof value === 'object' && value.valor ? parseFloat(value.valor.toString()) || defaultValue :
                defaultValue;
       }
     }
@@ -53,7 +53,7 @@ export const extractCoverage = (product: UniversalProduct, type: string, default
   // Verificar estruturas alternativas
   const capitalizedType = type.charAt(0).toUpperCase() + type.slice(1);
   if (product[`cobertura${capitalizedType}`]) {
-    return parseFloat(product[`cobertura${capitalizedType}`]) || defaultValue;
+    return parseFloat(product[`cobertura${capitalizedType}`].toString()) || defaultValue;
   }
   
   return defaultValue;
@@ -137,7 +137,7 @@ export const processPlans = async (products: UniversalProduct[]): Promise<Insura
     console.log(`Produto ${i + 1} - Detalhes:`, {
       id: product.id || product.codigo,
       nome: product.nome || product.descricao,
-      preco: product.preco || product.valorBruto,
+      preco: product.preco,
       valorBruto: product.valorBruto,
       valorBrutoBrl: product.valorBrutoBrl,
       valorBrutoUsd: product.valorBrutoUsd,
@@ -147,12 +147,18 @@ export const processPlans = async (products: UniversalProduct[]): Promise<Insura
     
     // Extrair preço conforme documentação
     let price = 0;
-    if (product.valorBrutoBrl) {
-      price = parseFloat(product.valorBrutoBrl.toString());
-    } else if (product.preco) {
-      price = parseFloat(product.preco.toString());
-    } else if (product.valorBruto) {
-      price = parseFloat(product.valorBruto.toString());
+    if (product.valorBrutoBrl !== undefined) {
+      price = typeof product.valorBrutoBrl === 'string' ? 
+        parseFloat(product.valorBrutoBrl) : 
+        product.valorBrutoBrl;
+    } else if (product.preco !== undefined) {
+      price = typeof product.preco === 'string' ? 
+        parseFloat(product.preco) : 
+        product.preco as number;
+    } else if (product.valorBruto !== undefined) {
+      price = typeof product.valorBruto === 'string' ? 
+        parseFloat(product.valorBruto) : 
+        product.valorBruto as number;
     } else {
       // Fallback para preço aleatório
       price = Math.floor(Math.random() * 300) + 100;
