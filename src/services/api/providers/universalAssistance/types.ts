@@ -62,6 +62,14 @@ export interface UniversalCurrency {
   simbolo: string;
 }
 
+// Exchange rate interface
+export interface UniversalExchangeRate {
+  taxaCambio: number;
+  moedaOrigem: string;
+  moedaDestino: string;
+  data: string;
+}
+
 // Sale interface
 export interface UniversalSale {
   codigoCarrinho: string;
@@ -79,6 +87,10 @@ export interface UniversalSale {
 export interface UniversalPassenger {
   nome: string;
   dataNascimento: string;
+  documento?: string;
+  tipoDocumento?: number;
+  email?: string;
+  telefone?: string;
 }
 
 // Quote payload interface
@@ -111,14 +123,23 @@ export interface UniversalProduct {
   valorBrutoUsd?: number | string;
   valorTotalBrl?: number | string;
   valorEmDinheiro?: number | string;
-  coberturas?: any;
-  beneficios?: any[];
+  coberturas?: UniversalProductCoverage[] | Record<string, UniversalProductCoverage>;
+  beneficios?: UniversalBenefit[];
   caracteristicas?: any[];
   // Campos específicos para coberturas que podem aparecer
   coberturaMedical?: string | number;
   coberturaBaggage?: string | number;
   coberturaCancellation?: string | number;
   coberturaDelay?: string | number;
+}
+
+// Product coverage interface
+export interface UniversalProductCoverage {
+  tipo?: string;
+  nome?: string;
+  valor?: number | string;
+  valorCoberto?: number | string;
+  descricao?: string;
 }
 
 // Quote response interface
@@ -131,5 +152,37 @@ export interface UniversalQuoteResponse {
   produtos?: UniversalProduct[];
   planos?: UniversalProduct[];
   message?: string;
-  beneficios?: any[];
+  beneficios?: UniversalBenefit[];
+}
+
+// Purchase payload interface
+export interface UniversalPurchasePayload {
+  codigoCarrinho: string;
+  passageiros: UniversalPassenger[];
+  pagamento: {
+    formaPagamento: number;
+    parcelas: number;
+    valor: number;
+    codigoOperadora?: number;
+    dadosCartao?: {
+      numero: string;
+      validade: string;
+      cvv: string;
+      titular: string;
+    };
+  };
+}
+
+// Purchase response interface
+export interface UniversalPurchaseResponse {
+  codigoVenda: string;
+  bilhete: string;
+  urlVoucher: string;
+  status: string;
+  message?: string;
+}
+
+// Voucher interface
+export interface UniversalVoucher {
+  url: string;
 }

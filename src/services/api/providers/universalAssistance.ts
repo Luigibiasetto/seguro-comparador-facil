@@ -9,7 +9,8 @@ import {
   getProductBenefits,
   getClassifications,
   getTripTypes,
-  getBenefits
+  getBenefits,
+  getVoucherUrl
 } from "./universalAssistance/api";
 import { 
   processPlans, 
@@ -64,6 +65,18 @@ export const fetchUniversalAssistanceOffers = async (params: SearchParams): Prom
       // Extrair os produtos/planos conforme documentação
       if (quoteData.produtos && quoteData.produtos.length > 0) {
         console.log(`Produtos encontrados (${quoteData.produtos.length}):`, quoteData.produtos);
+        
+        // Se houver um código de carrinho, recupere o URL do voucher
+        if (quoteData.codigoCarrinho) {
+          try {
+            const voucherUrl = await getVoucherUrl(quoteData.codigoCarrinho);
+            console.log("URL do voucher:", voucherUrl);
+            quoteData.urlVoucher = voucherUrl;
+          } catch (voucherError) {
+            console.warn("Erro ao obter URL do voucher:", voucherError);
+          }
+        }
+        
         return await processPlans(quoteData.produtos);
       } 
       // Verificar campo 'planos' se 'produtos' não existir
@@ -132,9 +145,18 @@ export const testUniversalAssistanceConnection = async (): Promise<{ success: bo
       try {
         const benefits = await getBenefits();
         console.log("Benefícios recuperados durante o teste:", benefits);
+        
+        // Buscar classificações e tipos de viagem para verificação completa
+        const [classifications, tripTypes] = await Promise.all([
+          getClassifications(),
+          getTripTypes()
+        ]);
+        
         result.data = {
           ...result.data,
-          benefits: benefits.slice(0, 5) // Limitamos para não sobrecarregar os logs
+          benefits: benefits.slice(0, 5), // Limitamos para não sobrecarregar os logs
+          classifications: classifications.slice(0, 5),
+          tripTypes: tripTypes.slice(0, 5)
         };
       } catch (benefitsError) {
         console.warn("Teste de conexão bem sucedido, mas falha ao buscar benefícios:", benefitsError);

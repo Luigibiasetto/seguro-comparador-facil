@@ -42,6 +42,9 @@ const InsuranceOfferCard = ({
   // Destaque para planos recomendados
   const isRecommended = offer.recommended;
 
+  // Garantir que coverage.medical existe
+  const medicalCoverage = offer.coverage?.medical || 0;
+
   return (
     <Card className={`overflow-hidden transition-all duration-200 ${isRecommended ? 'border-primary border-2 shadow-lg' : ''}`}>
       {isRecommended && (
@@ -69,7 +72,7 @@ const InsuranceOfferCard = ({
               <div className="grid grid-cols-1 md:grid-cols-3 gap-2 my-3">
                 <div className="flex items-center text-sm">
                   <Shield className="w-4 h-4 mr-1 text-primary" />
-                  <span>Médica: {formatPrice(offer.coverage.medical)}</span>
+                  <span>Médica: {formatPrice(medicalCoverage)}</span>
                 </div>
                 <div className="flex items-center text-sm">
                   <Clock className="w-4 h-4 mr-1 text-primary" />
@@ -81,14 +84,13 @@ const InsuranceOfferCard = ({
                 </div>
               </div>
               <div className="flex flex-wrap gap-2 mt-3">
-                {/* Fazemos a deduplicação de benefícios e usamos o índice como parte da key */}
-                {Array.from(new Set(offer.benefits)).slice(0, 3).map((benefit, index) => (
+                {Array.from(new Set(offer.benefits || [])).slice(0, 3).map((benefit, index) => (
                   <div key={`${benefit}-${index}`} className="bg-muted px-2 py-1 rounded-md text-xs flex items-center">
                     <Check className="w-3 h-3 mr-1 text-green-500" />
                     {benefit}
                   </div>
                 ))}
-                {offer.benefits.length > 3 && (
+                {offer.benefits && offer.benefits.length > 3 && (
                   <div className="bg-muted px-2 py-1 rounded-md text-xs">
                     +{Array.from(new Set(offer.benefits)).length - 3} benefícios
                   </div>
@@ -136,19 +138,19 @@ const InsuranceOfferCard = ({
                   <TableBody>
                     <TableRow>
                       <TableCell>Médica</TableCell>
-                      <TableCell className="text-right font-medium">{formatPrice(offer.coverage.medical)}</TableCell>
+                      <TableCell className="text-right font-medium">{formatPrice(offer.coverage?.medical || 0)}</TableCell>
                     </TableRow>
                     <TableRow>
                       <TableCell>Bagagem</TableCell>
-                      <TableCell className="text-right font-medium">{formatPrice(offer.coverage.baggage)}</TableCell>
+                      <TableCell className="text-right font-medium">{formatPrice(offer.coverage?.baggage || 0)}</TableCell>
                     </TableRow>
                     <TableRow>
                       <TableCell>Cancelamento</TableCell>
-                      <TableCell className="text-right font-medium">{formatPrice(offer.coverage.cancellation)}</TableCell>
+                      <TableCell className="text-right font-medium">{formatPrice(offer.coverage?.cancellation || 0)}</TableCell>
                     </TableRow>
                     <TableRow>
                       <TableCell>Atraso</TableCell>
-                      <TableCell className="text-right font-medium">{formatPrice(offer.coverage.delay)}</TableCell>
+                      <TableCell className="text-right font-medium">{formatPrice(offer.coverage?.delay || 0)}</TableCell>
                     </TableRow>
                   </TableBody>
                 </Table>
@@ -157,8 +159,7 @@ const InsuranceOfferCard = ({
               <div>
                 <h4 className="font-medium mb-3">Benefícios</h4>
                 <div className="grid grid-cols-1 gap-2">
-                  {/* Use de Set para remover duplicatas e adicione índice na key */}
-                  {Array.from(new Set(offer.benefits)).map((benefit, index) => (
+                  {Array.from(new Set(offer.benefits || [])).map((benefit, index) => (
                     <div key={`${benefit}-${index}`} className="flex items-center gap-2">
                       <Check className="text-green-500 w-4 h-4" />
                       <span>{benefit}</span>

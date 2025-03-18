@@ -28,6 +28,11 @@ export const getQuote = async (payload: UniversalQuotePayload): Promise<Universa
         console.log(` - valorTotalBrl: ${produto.valorTotalBrl}`);
         console.log(` - valorEmDinheiro: ${produto.valorEmDinheiro}`);
         
+        // Verificar coberturas específicas
+        if (produto.coberturas) {
+          console.log(` - Coberturas:`, produto.coberturas);
+        }
+        
         // Verificar onde o valor pode estar
         const possibleValues = [];
         if (produto.valorBrutoBrl !== undefined) possibleValues.push(["valorBrutoBrl", produto.valorBrutoBrl]);
@@ -59,6 +64,7 @@ export const prepareQuotePayload = (params: SearchParams): UniversalQuotePayload
     };
   });
   
+  // tipoViagem: 0 para nacional, 1 para internacional
   const tipoViagem = params.destination === "BR" ? 0 : 1;
   const destinos = [getDestinationCode(params.destination)];
   
@@ -68,9 +74,20 @@ export const prepareQuotePayload = (params: SearchParams): UniversalQuotePayload
     dataSaida: departureFormatted,
     dataRetorno: returnFormatted,
     tipoViagem: tipoViagem,
-    tipoTarifa: 1,  // 1 para Folheto (padrão)
+    tipoTarifa: 1,  // 1 para Folheto (padrão) conforme documentação
     produtoAvulso: false,
     cupom: "",
     classificacoes: [1]  // 1 = "Todos" conforme documentação
   };
+};
+
+// Função para obter a URL do voucher
+export const getVoucherUrl = async (codigoCarrinho: string): Promise<string> => {
+  try {
+    const response = await fetchUniversalPost<{urlVoucher: string}>(`/Voucher/imprimir/${codigoCarrinho}`, {});
+    return response.urlVoucher;
+  } catch (error) {
+    console.error("Erro ao obter URL do voucher:", error);
+    throw error;
+  }
 };
