@@ -49,14 +49,17 @@ function extractCoverage(product: UniversalProduct, type: string, defaultValue: 
       : product.coberturas[type];
       
     if (cobertura) {
-      return parseFloat(cobertura.valor || cobertura.valorCoberto || "0") || defaultValue;
+      // Corrigido: Converter para string antes de usar parseFloat
+      const valorStr = cobertura.valor?.toString() || cobertura.valorCoberto?.toString() || "0";
+      return parseFloat(valorStr) || defaultValue;
     }
   }
   
   // Verificar estruturas alternativas
   if (product[`cobertura${type.charAt(0).toUpperCase() + type.slice(1)}` as keyof UniversalProduct]) {
     const value = product[`cobertura${type.charAt(0).toUpperCase() + type.slice(1)}` as keyof UniversalProduct];
-    return parseFloat(value as string) || defaultValue;
+    // Corrigido: Converter para string antes de usar parseFloat
+    return typeof value === 'number' ? value : parseFloat(String(value)) || defaultValue;
   }
   
   return defaultValue;
