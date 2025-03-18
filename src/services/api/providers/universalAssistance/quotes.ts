@@ -54,8 +54,9 @@ export const getQuote = async (payload: UniversalQuotePayload): Promise<Universa
 
 // Função para preparar o payload de cotação conforme documentação
 export const prepareQuotePayload = (params: SearchParams): UniversalQuotePayload => {
-  const departureFormatted = new Date(params.departureDate).toISOString().split('T')[0];
-  const returnFormatted = new Date(params.returnDate).toISOString().split('T')[0];
+  // Formatar datas ISO 8601 para string
+  const departureFormatted = new Date(params.departureDate).toISOString();
+  const returnFormatted = new Date(params.returnDate).toISOString();
   
   const passageiros = params.passengers.ages.map(age => {
     return {
@@ -77,7 +78,13 @@ export const prepareQuotePayload = (params: SearchParams): UniversalQuotePayload
     tipoTarifa: 1,  // 1 para Folheto (padrão) conforme documentação
     produtoAvulso: false,
     cupom: "",
-    classificacoes: [1]  // 1 = "Todos" conforme documentação
+    classificacoes: [1],  // 1 = "Todos" conforme documentação
+    // Adicionando os campos opcionais conforme o exemplo
+    valorTotalPacote: 0,
+    codigoOperacao: 0,
+    canalDeVenda: 0,
+    multiviagem: false,
+    idCotacao: 0
   };
 };
 
