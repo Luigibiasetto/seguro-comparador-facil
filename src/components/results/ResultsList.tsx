@@ -126,7 +126,12 @@ const ResultsList = ({
           </div>
         </div>
       ) : filteredOffers.length === 0 ? (
-        <NoResultsFound onBackToSearch={onBackToSearch} />
+        <NoResultsFound 
+          onBackToSearch={onBackToSearch} 
+          onRetry={onRetry}
+          onConfigureApi={onConfigureApi}
+          errorMessage={errorMessage || undefined}
+        />
       ) : (
         <>
           <div className="space-y-4">

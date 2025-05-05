@@ -92,6 +92,11 @@ export const fetchUniversalAssistanceOffers = async (params: SearchParams): Prom
         return offers;
       }
       
+      // Se não encontrar produtos e tiver uma mensagem específica sobre folheto
+      if (quoteData.message && quoteData.message.includes("folheto")) {
+        throw new Error("Nenhum produto disponível para esta combinação de datas e destino. Por favor, tente alterar as datas ou o destino.");
+      }
+      
       // Se não encontrar produtos, exibir mensagem informativa
       const errorMessage = quoteData.message || "Nenhum produto encontrado na resposta da API";
       throw new Error(errorMessage);
@@ -107,6 +112,8 @@ export const fetchUniversalAssistanceOffers = async (params: SearchParams): Prom
           errorMessage = "Erro de conexão com a API. Verifique se o proxy está ativado nas configurações da API.";
         } else if (errorMessage.includes("401") || errorMessage.includes("Unauthorized")) {
           errorMessage = "Credenciais inválidas. Verifique seu login e senha da Universal Assistance.";
+        } else if (errorMessage.includes("folheto") || errorMessage.includes("Nenhum produto de folheto")) {
+          errorMessage = "Nenhum produto disponível para esta combinação de datas e destino. Por favor, tente com outros parâmetros.";
         }
       }
       

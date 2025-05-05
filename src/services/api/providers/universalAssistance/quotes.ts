@@ -14,6 +14,38 @@ export const getQuote = async (payload: UniversalQuotePayload): Promise<Universa
       throw new Error("Payload de cotação incompleto. Verifique os campos obrigatórios.");
     }
     
+    // Verificar se as datas são válidas - não pode ser o mesmo dia
+    const dataSaida = new Date(payload.dataSaida);
+    const dataRetorno = new Date(payload.dataRetorno);
+    
+    if (dataSaida.toDateString() === dataRetorno.toDateString()) {
+      console.warn("Data de saída e retorno são iguais. Ajustando data de retorno para o dia seguinte.");
+      
+      // Ajustar a data de retorno para o dia seguinte
+      dataRetorno.setDate(dataRetorno.getDate() + 1);
+      payload.dataRetorno = dataRetorno.toISOString().split('T')[0] + 'T00:00:00';
+    }
+    
+    // Verificar se as datas não estão no passado
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    if (dataSaida < today) {
+      console.warn("Data de saída está no passado. Ajustando para a data atual.");
+      payload.dataSaida = today.toISOString().split('T')[0] + 'T00:00:00';
+      
+      // Garantir que a data de retorno é pelo menos 1 dia após a data de saída
+      const minReturnDate = new Date(today);
+      minReturnDate.setDate(minReturnDate.getDate() + 1);
+      
+      if (dataRetorno <= today) {
+        console.warn("Data de retorno está no passado. Ajustando para o dia seguinte.");
+        payload.dataRetorno = minReturnDate.toISOString().split('T')[0] + 'T00:00:00';
+      }
+    }
+    
+    console.log("Payload ajustado:", JSON.stringify(payload, null, 2));
+    
     // Adicionar login e senha diretamente no payload como exigido pela API
     const response = await fetchUniversalPost<UniversalQuoteResponse>('/Cotacao', payload);
     console.log("Resposta da cotação:", JSON.stringify(response, null, 2));
@@ -27,6 +59,11 @@ export const getQuote = async (payload: UniversalQuotePayload): Promise<Universa
     // Verificar mensagens de erro na resposta
     if (response.message && typeof response.message === 'string') {
       console.warn("Mensagem da API:", response.message);
+      
+      if (response.message.includes("Nenhum produto de folheto localizado")) {
+        console.error("Erro específico de folheto:", response.message);
+        throw new Error("Nenhum produto disponível para esta combinação de datas e destino. Por favor, tente com outros parâmetros.");
+      }
       
       if (response.message.includes("erro") || 
           response.message.includes("nenhum produto") || 
@@ -104,11 +141,35 @@ export const getQuote = async (payload: UniversalQuotePayload): Promise<Universa
 // Função para preparar o payload de cotação conforme documentação
 export const prepareQuotePayload = (params: SearchParams): UniversalQuotePayload => {
   try {
-    // Ajustes para formato ISO 8601 completo
+    // Calcular diferença entre datas para evitar erros de mesma data
     const departureDate = new Date(params.departureDate);
     const returnDate = new Date(params.returnDate);
     
-    // Garantir que as datas estão em formato correto
+    // Verificar se as datas são iguais
+    const isSameDay = departureDate.getDate() === returnDate.getDate() && 
+                      departureDate.getMonth() === returnDate.getMonth() && 
+                      departureDate.getFullYear() === returnDate.getFullYear();
+    
+    // Se for o mesmo dia, adicionar 1 dia à data de retorno
+    if (isSameDay) {
+      returnDate.setDate(returnDate.getDate() + 1);
+    }
+    
+    // Garantir que as datas estão no futuro
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    if (departureDate < today) {
+      console.warn("Data de partida está no passado, ajustando para hoje");
+      departureDate.setTime(today.getTime());
+      
+      // Garantir que a data de retorno é pelo menos 1 dia após a partida
+      if (returnDate <= departureDate) {
+        returnDate.setTime(departureDate.getTime());
+        returnDate.setDate(returnDate.getDate() + 1);
+      }
+    }
+    
     // Usar formato YYYY-MM-DD que é mais comumente aceito pelas APIs
     const formatDateForApi = (date: Date): string => {
       const year = date.getFullYear();
