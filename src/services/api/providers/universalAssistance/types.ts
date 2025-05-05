@@ -123,6 +123,7 @@ export interface UniversalProduct {
   valorBrutoUsd?: number | string;
   valorTotalBrl?: number | string;
   valorEmDinheiro?: number | string;
+  moedaOrigem?: string; // Added the missing property
   coberturas?: UniversalProductCoverage[] | Record<string, UniversalProductCoverage>;
   beneficios?: UniversalBenefit[];
   caracteristicas?: any[];
