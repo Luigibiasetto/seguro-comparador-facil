@@ -39,12 +39,12 @@ export const extractPrice = (product: UniversalProduct): number => {
 // Função para extrair o valor de cobertura médica de um produto
 export const extractMedicalCoverage = (product: UniversalProduct): number => {
   // Verificar se existe uma propriedade de cobertura médica direta
-  if (typeof product.coberturaMedica === 'number') {
-    return product.coberturaMedica;
+  if (typeof product.coberturaMedical === 'number') {
+    return product.coberturaMedical;
   }
   
-  if (typeof product.coberturaMedica === 'string') {
-    const parsedValue = parseFloat(String(product.coberturaMedica).replace(/[^\d.,]/g, '').replace(',', '.'));
+  if (typeof product.coberturaMedical === 'string') {
+    const parsedValue = parseFloat(String(product.coberturaMedical).replace(/[^\d.,]/g, '').replace(',', '.'));
     if (!isNaN(parsedValue)) {
       return parsedValue;
     }
@@ -65,8 +65,8 @@ export const extractMedicalCoverage = (product: UniversalProduct): number => {
       if (medicalCoverageItem) {
         const value = medicalCoverageItem.valor || 
                       medicalCoverageItem.valorCoberto ||
-                      medicalCoverageItem.valorCobertura || 
-                      medicalCoverageItem.value;
+                      medicalCoverageItem.descricao || 
+                      null;
         
         if (value) {
           if (typeof value === 'number') {
@@ -118,7 +118,7 @@ export const extractBenefits = (product: UniversalProduct): string[] => {
       if (typeof b === 'string') {
         benefits.push(b);
       } else if (typeof b === 'object' && b !== null) {
-        const name = b.nome || b.descricao || b.name;
+        const name = b.nome || b.descricao;
         if (name) {
           benefits.push(name);
         }
@@ -132,7 +132,7 @@ export const extractBenefits = (product: UniversalProduct): string[] => {
       if (typeof c === 'string') {
         benefits.push(c);
       } else if (typeof c === 'object' && c !== null) {
-        const name = c.nome || c.descricao || c.name;
+        const name = c.nome || c.descricao;
         if (name) {
           benefits.push(name);
         }
@@ -170,7 +170,7 @@ export const processPlans = async (products: UniversalProduct[]): Promise<Insura
       
       // Criar oferta
       const offer: InsuranceOffer = {
-        id: product.id || product.codigo || `universal-${Math.random().toString(36).substring(2, 9)}`,
+        id: product.codigo || `universal-${Math.random().toString(36).substring(2, 9)}`,
         providerId: "universal-assist",
         name: product.nome || product.descricao || `Plano Universal ${index + 1}`,
         price: price,
