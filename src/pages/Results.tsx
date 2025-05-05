@@ -21,7 +21,7 @@ import HighlightedBenefits from "@/components/results/HighlightedBenefits";
 import FrequentlyAskedQuestions from "@/components/results/FrequentlyAskedQuestions";
 import { secureStore } from "@/services/security/dataSecurity";
 
-type SortType = "price" | "coverage"; // Removed rating
+type SortType = "price" | "coverage";
 type SortDirection = "asc" | "desc";
 
 interface FilterState {
@@ -75,6 +75,7 @@ const Results = () => {
   });
 
   const [dataEncrypted, setDataEncrypted] = useState(true);
+  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -88,11 +89,21 @@ const Results = () => {
         
         console.log("Buscando seguros com parâmetros:", parsedParams);
         
-        // Depois buscar as ofertas
-        const offersData = await searchInsurances(parsedParams);
+        // Definir um timeout para a busca de seguros
+        const timeoutPromise = new Promise<InsuranceOffer[]>((_, reject) => {
+          setTimeout(() => {
+            reject(new Error("A busca de seguros demorou muito tempo. Verifique sua conexão e as configurações da API."));
+          }, 30000); // 30 segundos de timeout
+        });
+        
+        // Competição entre a busca real e o timeout
+        const offersData = await Promise.race([
+          searchInsurances(parsedParams),
+          timeoutPromise
+        ]);
         
         if (!offersData || offersData.length === 0) {
-          setLoadError("Nenhum seguro encontrado para os critérios informados");
+          setLoadError("Nenhum seguro encontrado para os critérios informados. Tente outros parâmetros de busca.");
           setOffers([]);
           setFilteredOffers([]);
         } else {
@@ -112,9 +123,22 @@ const Results = () => {
         }
       } catch (error) {
         console.error("Erro ao carregar dados:", error);
-        setLoadError(error instanceof Error ? error.message : "Erro desconhecido");
+        let errorMessage = "Erro desconhecido ao buscar seguros.";
+        
+        if (error instanceof Error) {
+          errorMessage = error.message;
+          
+          // Melhorar mensagens específicas
+          if (errorMessage.includes("Failed to fetch") || errorMessage.includes("fetch")) {
+            errorMessage = "Erro de conexão com a API. Verifique sua conexão com a internet e as configurações da API.";
+          } else if (errorMessage.includes("timeout")) {
+            errorMessage = "A busca de seguros demorou muito tempo. Tente novamente ou ajuste as configurações da API.";
+          }
+        }
+        
+        setLoadError(errorMessage);
         toast.error("Ocorreu um erro ao carregar os seguros", {
-          description: error instanceof Error ? error.message : "Por favor, verifique as configurações da API e tente novamente.",
+          description: errorMessage,
           duration: 8000
         });
         
@@ -126,7 +150,7 @@ const Results = () => {
     };
 
     fetchData();
-  }, [location.search]);
+  }, [location.search, retryCount]);
 
   useEffect(() => {
     let result = [...offers];
@@ -187,6 +211,12 @@ const Results = () => {
   
   const handleConfigureApi = () => {
     setIsApiConfigOpen(true);
+  };
+  
+  const handleRetry = () => {
+    setRetryCount(count => count + 1);
+    setIsLoading(true);
+    toast.info("Tentando novamente...");
   };
 
   const allBenefits = Array.from(
@@ -260,10 +290,7 @@ const Results = () => {
               itemsPerPage={itemsPerPage}
               searchParams={parsedParams}
               errorMessage={loadError}
-              onRetry={() => {
-                setIsLoading(true);
-                window.location.reload();
-              }}
+              onRetry={handleRetry}
               onConfigureApi={handleConfigureApi}
             />
           </div>

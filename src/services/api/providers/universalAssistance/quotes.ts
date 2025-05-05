@@ -25,9 +25,15 @@ export const getQuote = async (payload: UniversalQuotePayload): Promise<Universa
     }
     
     // Verificar mensagens de erro na resposta
-    if (response.message && typeof response.message === 'string' && response.message.includes("erro")) {
-      console.error("Erro retornado pela API:", response.message);
-      throw new Error(response.message);
+    if (response.message && typeof response.message === 'string') {
+      console.warn("Mensagem da API:", response.message);
+      
+      if (response.message.includes("erro") || 
+          response.message.includes("nenhum produto") || 
+          response.message.includes("Nenhum produto")) {
+        console.error("Erro retornado pela API:", response.message);
+        throw new Error(response.message);
+      }
     }
     
     // Verificar onde os produtos estão na resposta
@@ -53,7 +59,7 @@ export const getQuote = async (payload: UniversalQuotePayload): Promise<Universa
     console.log("Detalhamento dos produtos recebidos:");
     produtos.forEach((produto, index) => {
       console.log(`Produto ${index + 1} - ${produto.nome || produto.descricao || 'Sem nome'}:`);
-      console.log(` - Código: ${produto.codigo || produto.id || 'Sem código'}`);
+      console.log(` - Código: ${produto.codigo || 'Sem código'}`);
       
       // Verificar todos os possíveis campos de preço
       const priceFields = [
@@ -87,7 +93,10 @@ export const getQuote = async (payload: UniversalQuotePayload): Promise<Universa
     };
   } catch (error) {
     console.error("Erro ao obter cotação:", error);
-    toast.error("Erro ao obter cotação de seguro: " + (error instanceof Error ? error.message : "Erro desconhecido"));
+    const errorMessage = error instanceof Error ? error.message : "Erro desconhecido";
+    toast.error("Erro ao obter cotação de seguro: " + errorMessage, {
+      duration: 5000
+    });
     throw error;
   }
 };
@@ -100,8 +109,16 @@ export const prepareQuotePayload = (params: SearchParams): UniversalQuotePayload
     const returnDate = new Date(params.returnDate);
     
     // Garantir que as datas estão em formato correto
-    const departureFormatted = departureDate.toISOString();
-    const returnFormatted = returnDate.toISOString();
+    // Usar formato YYYY-MM-DD que é mais comumente aceito pelas APIs
+    const formatDateForApi = (date: Date): string => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}T00:00:00`;
+    };
+    
+    const departureFormatted = formatDateForApi(departureDate);
+    const returnFormatted = formatDateForApi(returnDate);
     
     console.log("Data de partida formatada:", departureFormatted);
     console.log("Data de retorno formatada:", returnFormatted);

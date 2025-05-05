@@ -92,28 +92,41 @@ export const fetchUniversalAssistanceOffers = async (params: SearchParams): Prom
         return offers;
       }
       
-      // Se não encontrar produtos, exibir mensagem
+      // Se não encontrar produtos, exibir mensagem informativa
       const errorMessage = quoteData.message || "Nenhum produto encontrado na resposta da API";
       throw new Error(errorMessage);
       
     } catch (apiError) {
       console.error("Erro na API de cotação:", apiError);
-      toast.error("Erro ao solicitar cotação", {
-        description: apiError instanceof Error ? apiError.message : "Erro desconhecido",
+      let errorMessage = "Erro ao solicitar cotação";
+      
+      if (apiError instanceof Error) {
+        errorMessage = apiError.message;
+        // Melhorar mensagens de erro específicas
+        if (errorMessage.includes("CORS") || errorMessage.includes("Failed to fetch")) {
+          errorMessage = "Erro de conexão com a API. Verifique se o proxy está ativado nas configurações da API.";
+        } else if (errorMessage.includes("401") || errorMessage.includes("Unauthorized")) {
+          errorMessage = "Credenciais inválidas. Verifique seu login e senha da Universal Assistance.";
+        }
+      }
+      
+      toast.error(errorMessage, {
         duration: 5000
       });
       
-      // Se a tentativa falhar, lançamos o erro para ser tratado acima
-      throw apiError;
+      // Lançamos o erro para ser tratado no componente
+      throw new Error(errorMessage);
     }
   } catch (error) {
     console.error("Erro ao buscar dados da Universal Assistance:", error);
-    toast.error("Erro ao conectar com a API da Universal Assistance", {
-      description: error instanceof Error ? error.message : "Erro desconhecido",
+    const errorMessage = error instanceof Error ? error.message : "Erro desconhecido ao conectar com a API";
+    
+    toast.error("Erro na busca de seguros", {
+      description: errorMessage,
       duration: 5000
     });
     
-    // Não retornar dados simulados em caso de erro
+    // Retornar o erro para ser mostrado na interface
     throw error;
   }
 };

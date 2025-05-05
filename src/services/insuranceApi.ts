@@ -23,68 +23,108 @@ export const searchInsurances = async (params: SearchParams): Promise<InsuranceO
     const apiConfig = getApiConfig();
     console.log("Configuração atual da API:", apiConfig);
     
-    // Salvar lead no banco de dados
-    try {
-      await saveLead({
-        email: params.email,
-        phone: params.phone,
-        origin: params.origin,
-        destination: params.destination,
-        departureDate: params.departureDate,
-        returnDate: params.returnDate,
-        passengers: params.passengers
-      });
-      console.log("Lead salvo com sucesso");
-    } catch (leadError) {
+    // Salvar lead no banco de dados de forma assíncrona (não aguardar resposta)
+    saveLead({
+      email: params.email,
+      phone: params.phone,
+      origin: params.origin,
+      destination: params.destination,
+      departureDate: params.departureDate,
+      returnDate: params.returnDate,
+      passengers: params.passengers
+    }).catch(leadError => {
       console.error("Erro ao salvar lead:", leadError);
       // Continua a busca mesmo com erro no lead
-    }
+    });
     
     // Se a API não estiver configurada, alerta o usuário
     if (!apiConfig.baseUrl && !apiConfig.provider) {
       toast.error("API de seguros não configurada. Configure a API antes de realizar buscas.");
-      return []; // Retorna array vazio
+      throw new Error("API de seguros não configurada. Configure a API antes de realizar buscas.");
     }
+    
+    // Definir um timeout para a operação
+    const timeoutPromise = new Promise<InsuranceOffer[]>((_, reject) => {
+      setTimeout(() => {
+        reject(new Error("Timeout na busca de seguros. A operação demorou muito tempo."));
+      }, 25000); // 25 segundos
+    });
     
     // Com base no provedor, usa a integração apropriada
     if (apiConfig.provider === "universal-assist") {
       console.log("Usando API da Universal Assistance para busca de seguros");
       
       try {
-        const offers = await fetchUniversalAssistanceOffers(params);
+        // Competição entre a busca real e o timeout
+        const offers = await Promise.race([
+          fetchUniversalAssistanceOffers(params),
+          timeoutPromise
+        ]);
+        
+        if (!offers || offers.length === 0) {
+          throw new Error("Nenhum seguro encontrado para os parâmetros informados.");
+        }
+        
         console.log(`${offers.length} ofertas encontradas`);
         return offers;
       } catch (error) {
         console.error("Erro com a API da Universal Assistance:", error);
         
-        // Verifica se o erro está relacionado a CORS e o proxy não está ativado
-        if (!apiConfig.useProxy && error instanceof Error && 
-            (error.message.includes('CORS') || error.message.includes('Failed to fetch'))) {
-          toast.error("Erro de CORS detectado. Considere ativar a opção de proxy nas configurações da API.", {
-            duration: 8000
-          });
-        } else {
-          toast.error("Erro ao buscar dados da Universal Assistance. Verifique o console para mais detalhes.");
+        let errorMessage = "Erro ao buscar dados da Universal Assistance.";
+        
+        if (error instanceof Error) {
+          errorMessage = error.message;
+          
+          // Verifica se o erro está relacionado a CORS e o proxy não está ativado
+          if (!apiConfig.useProxy && 
+              (errorMessage.includes('CORS') || 
+              errorMessage.includes('Failed to fetch') || 
+              errorMessage.includes('fetch'))) {
+            toast.error("Erro de conexão detectado. Considere ativar a opção de proxy nas configurações da API.", {
+              duration: 8000
+            });
+            
+            errorMessage = "Erro de conexão com a API. Ative a opção de proxy nas configurações.";
+          }
         }
         
-        return []; // Retorna array vazio
+        throw new Error(errorMessage);
       }
     } else {
       console.log("Usando API genérica para busca de seguros");
       try {
-        const offers = await fetchGenericInsuranceOffers(params);
+        // Competição entre a busca real e o timeout
+        const offers = await Promise.race([
+          fetchGenericInsuranceOffers(params),
+          timeoutPromise
+        ]);
+        
+        if (!offers || offers.length === 0) {
+          throw new Error("Nenhum seguro encontrado para os parâmetros informados.");
+        }
+        
         console.log(`${offers.length} ofertas encontradas`);
         return offers;
       } catch (error) {
         console.error("Erro com a API genérica:", error);
-        toast.error("Erro ao buscar dados da API. Verifique o console para mais detalhes.");
-        return []; // Retorna array vazio
+        
+        let errorMessage = "Erro ao buscar dados da API.";
+        if (error instanceof Error) {
+          errorMessage = error.message;
+        }
+        
+        throw new Error(errorMessage);
       }
     }
   } catch (error) {
     console.error("Erro ao buscar seguros:", error);
-    toast.error("Erro ao buscar seguros. Por favor, verifique a configuração da API e tente novamente.");
-    return []; // Retorna array vazio
+    
+    let errorMessage = "Erro ao buscar seguros. Por favor, verifique a configuração da API e tente novamente.";
+    if (error instanceof Error) {
+      errorMessage = error.message;
+    }
+    
+    throw new Error(errorMessage);
   }
 };
 
