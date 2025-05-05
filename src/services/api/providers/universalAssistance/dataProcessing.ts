@@ -29,13 +29,23 @@ function extractPrice(product: UniversalProduct): number {
   }
   
   if (typeof product.valorBrutoBrl === 'string') {
-    const parsedValue = parseFloat(product.valorBrutoBrl);
+    const parsedValue = parseFloat(String(product.valorBrutoBrl));
     if (!isNaN(parsedValue) && parsedValue > 0) return parsedValue;
   }
   
-  // Se não encontrarmos valor válido, retornamos um valor mockado aleatório
-  console.warn(`Nenhum valor válido encontrado para o produto ${product.codigo || 'desconhecido'}. Usando valor mockado.`);
-  return Math.floor(Math.random() * 300) + 100;
+  if (typeof product.valorTotalBrl === 'string') {
+    const parsedValue = parseFloat(String(product.valorTotalBrl));
+    if (!isNaN(parsedValue) && parsedValue > 0) return parsedValue;
+  }
+  
+  if (typeof product.valorEmDinheiro === 'string') {
+    const parsedValue = parseFloat(String(product.valorEmDinheiro));
+    if (!isNaN(parsedValue) && parsedValue > 0) return parsedValue;
+  }
+  
+  // Se não encontrarmos valor válido, retornamos zero e log de aviso
+  console.warn(`Nenhum valor válido encontrado para o produto ${product.codigo || 'desconhecido'}`);
+  return 0;
 }
 
 // Função para extrair coberturas
@@ -104,7 +114,7 @@ export const processPlans = async (products: UniversalProduct[]): Promise<Insura
       id: product.codigo || `universal-${Math.random().toString(36).substring(2, 9)}`,
       providerId: "universal-assist",
       name: product.nome || product.descricao || `Plano Universal ${index + 1}`,
-      price: extractedPrice,
+      price: extractedPrice || 0, // Garantir que sempre tenha um valor, mesmo que zero
       coverage: {
         medical: extractCoverage(product, 'medical', 40000),
         baggage: extractCoverage(product, 'baggage', 1000),

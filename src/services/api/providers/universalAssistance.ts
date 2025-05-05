@@ -1,4 +1,3 @@
-
 import { toast } from "sonner";
 import { getApiConfig } from "../config";
 import { InsuranceOffer, SearchParams } from "../types";
@@ -58,8 +57,8 @@ export const fetchUniversalAssistanceOffers = async (params: SearchParams): Prom
       
       // Processar a resposta da API
       if (!quoteData) {
-        console.warn("Resposta de cotação vazia, usando dados mockados");
-        return generateMockOffers(5);
+        console.warn("Resposta de cotação vazia");
+        throw new Error("Resposta de cotação vazia");
       }
       
       // Extrair os produtos/planos conforme documentação
@@ -104,16 +103,10 @@ export const fetchUniversalAssistanceOffers = async (params: SearchParams): Prom
         return await processPlans([genericProduct]);
       }
       
-      // Se não encontrar produtos, exibir mensagem e usar dados mockados
+      // Se não encontrar produtos, exibir mensagem
       const errorMessage = quoteData.message || "Nenhum produto encontrado na resposta da API";
-      console.warn(errorMessage);
+      throw new Error(errorMessage);
       
-      toast.warning(errorMessage, { 
-        description: "Exibindo dados de exemplo",
-        duration: 8000
-      });
-      
-      return generateMockOffers(5);
     } catch (apiError) {
       console.error("Erro na API de cotação:", apiError);
       toast.error("Erro ao solicitar cotação", {
@@ -121,8 +114,8 @@ export const fetchUniversalAssistanceOffers = async (params: SearchParams): Prom
         duration: 5000
       });
       
-      // Se a tentativa falhar, retornamos dados mockados
-      return generateMockOffers(5);
+      // Se a tentativa falhar, lançamos o erro para ser tratado acima
+      throw apiError;
     }
   } catch (error) {
     console.error("Erro ao buscar dados da Universal Assistance:", error);
@@ -131,6 +124,8 @@ export const fetchUniversalAssistanceOffers = async (params: SearchParams): Prom
       duration: 5000
     });
     
+    // Retornamos uma lista vazia em caso de erro
+    toast.info("Exibindo dados de exemplo para demonstração", { duration: 3000 });
     return generateMockOffers(5);
   }
 };
