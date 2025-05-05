@@ -1,3 +1,4 @@
+
 import { toast } from "sonner";
 import { getApiConfig } from "../config";
 import { InsuranceOffer, SearchParams } from "../types";
@@ -18,32 +19,20 @@ import {
 
 export const fetchUniversalAssistanceOffers = async (params: SearchParams): Promise<InsuranceOffer[]> => {
   try {
-    console.log("Iniciando busca de dados da Universal Assistance");
+    console.log("Iniciando busca de dados da Universal Assistance com parâmetros:", params);
     const apiConfig = getApiConfig();
     
     if (!apiConfig.providerSettings?.username || !apiConfig.providerSettings?.password) {
+      toast.error("Credenciais da Universal Assistance não configuradas");
       throw new Error("Credenciais da Universal Assistance não configuradas corretamente");
     }
 
     // Log configuração atual
     console.log("Configuração API:", {
       baseUrl: apiConfig.baseUrl,
-      username: apiConfig.providerSettings.username
+      username: apiConfig.providerSettings.username,
+      useProxy: apiConfig.useProxy
     });
-
-    // Pré-validação: buscar classificações e tipos de viagem para verificar a conexão
-    try {
-      console.log("Validando conexão com a API");
-      const [classifications, tripTypes] = await Promise.all([
-        getClassifications(),
-        getTripTypes()
-      ]);
-      console.log("Classificações disponíveis:", classifications);
-      console.log("Tipos de viagem disponíveis:", tripTypes);
-    } catch (validationError) {
-      console.error("Erro na validação inicial da API:", validationError);
-      // Continuamos mesmo com erro na validação
-    }
 
     // Preparar payload conforme documentação
     const cotacaoPayload = prepareQuotePayload(params);
@@ -76,31 +65,31 @@ export const fetchUniversalAssistanceOffers = async (params: SearchParams): Prom
           }
         }
         
-        return await processPlans(quoteData.produtos);
+        const offers = await processPlans(quoteData.produtos);
+        if (offers.length === 0) {
+          throw new Error("Nenhuma oferta válida encontrada nos produtos");
+        }
+        return offers;
       } 
       // Verificar campo 'planos' se 'produtos' não existir
       else if (quoteData.planos && quoteData.planos.length > 0) {
         console.log(`Planos encontrados (${quoteData.planos.length}):`, quoteData.planos);
-        return await processPlans(quoteData.planos);
+        
+        const offers = await processPlans(quoteData.planos);
+        if (offers.length === 0) {
+          throw new Error("Nenhuma oferta válida encontrada nos planos");
+        }
+        return offers;
       }
       // Verificar se o próprio objeto da resposta é um array de produtos
       else if (Array.isArray(quoteData) && quoteData.length > 0) {
         console.log(`Array de produtos/planos encontrado (${quoteData.length}):`, quoteData);
-        return await processPlans(quoteData);
-      }
-      // Se não encontrar produtos estruturados mas a API retornar benefícios genéricos
-      else if (quoteData.beneficios && Array.isArray(quoteData.beneficios)) {
-        console.log("Nenhum produto estruturado encontrado, mas há benefícios. Gerando oferta genérica.");
         
-        // Criar um produto genérico a partir dos benefícios
-        const genericProduct = {
-          codigo: "generic-universal",
-          nome: "Plano Universal Standard",
-          preco: 150, // Valor padrão
-          beneficios: quoteData.beneficios
-        };
-        
-        return await processPlans([genericProduct]);
+        const offers = await processPlans(quoteData);
+        if (offers.length === 0) {
+          throw new Error("Nenhuma oferta válida encontrada no array");
+        }
+        return offers;
       }
       
       // Se não encontrar produtos, exibir mensagem
@@ -124,9 +113,8 @@ export const fetchUniversalAssistanceOffers = async (params: SearchParams): Prom
       duration: 5000
     });
     
-    // Retornamos uma lista vazia em caso de erro
-    toast.info("Exibindo dados de exemplo para demonstração", { duration: 3000 });
-    return generateMockOffers(5);
+    // Não retornar dados simulados em caso de erro
+    throw error;
   }
 };
 

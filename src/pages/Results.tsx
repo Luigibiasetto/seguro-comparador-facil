@@ -43,6 +43,7 @@ const Results = () => {
   }
 
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [offers, setOffers] = useState<InsuranceOffer[]>([]);
   const [filteredOffers, setFilteredOffers] = useState<InsuranceOffer[]>([]);
   const [providers, setProviders] = useState<InsuranceProvider[]>([]);
@@ -78,27 +79,47 @@ const Results = () => {
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true);
+      setLoadError(null);
+      
       try {
-        const [providersData, offersData] = await Promise.all([
-          getInsuranceProviders(),
-          searchInsurances(parsedParams),
-        ]);
-        
+        // Primeiro buscar os provedores
+        const providersData = await getInsuranceProviders();
         setProviders(providersData);
-        setOffers(offersData);
-        setFilteredOffers(offersData);
         
-        secureStore('searchParams', parsedParams);
+        console.log("Buscando seguros com parâmetros:", parsedParams);
         
-        setFilters({
-          providers: [],
-          minCoverage: 0,
-          maxPrice: Math.max(...offersData.map(o => o.price)) + 50,
-          benefits: [],
-        });
+        // Depois buscar as ofertas
+        const offersData = await searchInsurances(parsedParams);
+        
+        if (!offersData || offersData.length === 0) {
+          setLoadError("Nenhum seguro encontrado para os critérios informados");
+          setOffers([]);
+          setFilteredOffers([]);
+        } else {
+          setOffers(offersData);
+          setFilteredOffers(offersData);
+          
+          // Atualizar filtros com base nos dados recebidos
+          setFilters({
+            providers: [],
+            minCoverage: 0,
+            maxPrice: Math.max(...offersData.map(o => o.price)) + 50,
+            benefits: [],
+          });
+          
+          // Armazenar parâmetros de busca de forma segura
+          secureStore('searchParams', parsedParams);
+        }
       } catch (error) {
         console.error("Erro ao carregar dados:", error);
-        toast.error("Ocorreu um erro ao carregar os seguros. Por favor, tente novamente.");
+        setLoadError(error instanceof Error ? error.message : "Erro desconhecido");
+        toast.error("Ocorreu um erro ao carregar os seguros", {
+          description: error instanceof Error ? error.message : "Por favor, verifique as configurações da API e tente novamente.",
+          duration: 8000
+        });
+        
+        setOffers([]);
+        setFilteredOffers([]);
       } finally {
         setIsLoading(false);
       }
@@ -163,6 +184,10 @@ const Results = () => {
   const handleBackToSearch = () => {
     navigate('/');
   };
+  
+  const handleConfigureApi = () => {
+    setIsApiConfigOpen(true);
+  };
 
   const allBenefits = Array.from(
     new Set(offers.flatMap(offer => offer.benefits))
@@ -189,7 +214,7 @@ const Results = () => {
             <Button 
               variant="outline" 
               className="gap-1"
-              onClick={() => setIsApiConfigOpen(true)}
+              onClick={handleConfigureApi}
             >
               <Settings className="w-4 h-4" />
               Configurar API
@@ -234,6 +259,12 @@ const Results = () => {
               setCurrentPage={setCurrentPage}
               itemsPerPage={itemsPerPage}
               searchParams={parsedParams}
+              errorMessage={loadError}
+              onRetry={() => {
+                setIsLoading(true);
+                window.location.reload();
+              }}
+              onConfigureApi={handleConfigureApi}
             />
           </div>
           

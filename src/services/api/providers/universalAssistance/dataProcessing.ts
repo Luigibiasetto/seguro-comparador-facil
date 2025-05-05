@@ -1,134 +1,199 @@
 
-import { InsuranceOffer } from "../../../api/types";
-import { UniversalProduct, UniversalBenefit } from "./types";
+import { InsuranceOffer } from "../../types";
+import { UniversalProduct } from "./types";
 
-// Função para extrair o valor correto do produto
-function extractPrice(product: UniversalProduct): number {
-  // Verificamos em ordem específica baseada na documentação
-  if (typeof product.valorBrutoBrl === 'number' && product.valorBrutoBrl > 0) {
-    return product.valorBrutoBrl;
-  }
+// Função para extrair o valor de preço de um produto
+export const extractPrice = (product: UniversalProduct): number => {
+  // Lista de possíveis campos de preço na ordem de prioridade
+  const priceFields = [
+    'preco',
+    'valorBrutoBrl',
+    'valorTotalBrl', 
+    'valorEmDinheiro',
+    'valorBruto',
+    'valorTotal',
+    'price'
+  ];
   
-  if (typeof product.preco === 'number' && product.preco > 0) {
-    return product.preco;
-  }
-  
-  // Também verificamos outros campos que podem conter o valor
-  if (typeof product.valorTotalBrl === 'number' && product.valorTotalBrl > 0) {
-    return product.valorTotalBrl;
-  }
-  
-  if (typeof product.valorEmDinheiro === 'number' && product.valorEmDinheiro > 0) {
-    return product.valorEmDinheiro;
-  }
-  
-  // Tentar converter de string para número se estivermos lidando com strings
-  if (typeof product.preco === 'string') {
-    const parsedPrice = parseFloat(product.preco);
-    if (!isNaN(parsedPrice) && parsedPrice > 0) return parsedPrice;
-  }
-  
-  if (typeof product.valorBrutoBrl === 'string') {
-    const parsedValue = parseFloat(String(product.valorBrutoBrl));
-    if (!isNaN(parsedValue) && parsedValue > 0) return parsedValue;
-  }
-  
-  if (typeof product.valorTotalBrl === 'string') {
-    const parsedValue = parseFloat(String(product.valorTotalBrl));
-    if (!isNaN(parsedValue) && parsedValue > 0) return parsedValue;
-  }
-  
-  if (typeof product.valorEmDinheiro === 'string') {
-    const parsedValue = parseFloat(String(product.valorEmDinheiro));
-    if (!isNaN(parsedValue) && parsedValue > 0) return parsedValue;
-  }
-  
-  // Se não encontrarmos valor válido, retornamos zero e log de aviso
-  console.warn(`Nenhum valor válido encontrado para o produto ${product.codigo || 'desconhecido'}`);
-  return 0;
-}
-
-// Função para extrair coberturas
-function extractCoverage(product: UniversalProduct, type: string, defaultValue: number): number {
-  // Tentar extrair cobertura dos diferentes formatos possíveis de resposta
-  if (product.coberturas) {
-    const cobertura = Array.isArray(product.coberturas)
-      ? product.coberturas.find((c: any) => 
-          c.tipo?.toLowerCase() === type || 
-          c.nome?.toLowerCase().includes(type))
-      : product.coberturas[type];
-      
-    if (cobertura) {
-      // Corrigido: Converter para string antes de usar parseFloat
-      const valorStr = cobertura.valor?.toString() || cobertura.valorCoberto?.toString() || "0";
-      return parseFloat(valorStr) || defaultValue;
+  // Tentar cada campo até encontrar um valor válido
+  for (const field of priceFields) {
+    if (product[field] !== undefined && product[field] !== null) {
+      // Converter para número se for string
+      if (typeof product[field] === 'string') {
+        const cleanedValue = String(product[field]).replace(/[^\d.,]/g, '').replace(',', '.');
+        const parsedValue = parseFloat(cleanedValue);
+        if (!isNaN(parsedValue)) {
+          return parsedValue;
+        }
+      } else if (typeof product[field] === 'number') {
+        return product[field];
+      }
     }
   }
   
-  // Verificar estruturas alternativas
-  if (product[`cobertura${type.charAt(0).toUpperCase() + type.slice(1)}` as keyof UniversalProduct]) {
-    const value = product[`cobertura${type.charAt(0).toUpperCase() + type.slice(1)}` as keyof UniversalProduct];
-    // Corrigido: Converter para string antes de usar parseFloat
-    return typeof value === 'number' ? value : parseFloat(String(value)) || defaultValue;
-  }
-  
-  return defaultValue;
-}
-
-// Função para extrair benefícios
-function extractBenefits(product: UniversalProduct): string[] {
-  if (product.beneficios && Array.isArray(product.beneficios)) {
-    return product.beneficios.map((b: any) => {
-      if (typeof b === 'string') return b;
-      return b.nome || b.descricao || "Benefício";
-    });
-  }
-  
-  if (product.caracteristicas && Array.isArray(product.caracteristicas)) {
-    return product.caracteristicas.map((c: any) => {
-      if (typeof c === 'string') return c;
-      return c.nome || c.descricao || "Característica";
-    });
-  }
-  
-  return ["COVID-19", "Telemedicina", "Assistência 24h", "Traslado médico"];
-}
-
-// Função para processar planos
-export const processPlans = async (products: UniversalProduct[]): Promise<InsuranceOffer[]> => {
-  return products.map((product: UniversalProduct, index: number) => {
-    // Log detalhado para cada produto antes de extrair o valor
-    console.log(`Processando produto ${index + 1}:`, {
-      id: product.codigo,
-      name: product.nome || product.descricao,
-      valorBrutoBrl: product.valorBrutoBrl,
-      preco: product.preco,
-      valorTotalBrl: product.valorTotalBrl,
-      valorEmDinheiro: product.valorEmDinheiro
-    });
-    
-    const extractedPrice = extractPrice(product);
-    console.log(`Valor extraído para o produto ${product.codigo || index}: ${extractedPrice}`);
-    
-    return {
-      id: product.codigo || `universal-${Math.random().toString(36).substring(2, 9)}`,
-      providerId: "universal-assist",
-      name: product.nome || product.descricao || `Plano Universal ${index + 1}`,
-      price: extractedPrice || 0, // Garantir que sempre tenha um valor, mesmo que zero
-      coverage: {
-        medical: extractCoverage(product, 'medical', 40000),
-        baggage: extractCoverage(product, 'baggage', 1000),
-        cancellation: extractCoverage(product, 'cancellation', 2000),
-        delay: extractCoverage(product, 'delay', 200),
-      },
-      benefits: extractBenefits(product),
-      rating: 4.5 + (Math.random() * 0.5),
-      recommended: index === 0,
-    };
-  });
+  // Valor padrão caso nenhum campo tenha sido encontrado
+  console.warn("Não foi possível extrair o preço do produto:", product);
+  return 0;
 };
 
-// Função para gerar ofertas mockadas
+// Função para extrair o valor de cobertura médica de um produto
+export const extractMedicalCoverage = (product: UniversalProduct): number => {
+  // Verificar se existe uma propriedade de cobertura médica direta
+  if (typeof product.coberturaMedica === 'number') {
+    return product.coberturaMedica;
+  }
+  
+  if (typeof product.coberturaMedica === 'string') {
+    const parsedValue = parseFloat(String(product.coberturaMedica).replace(/[^\d.,]/g, '').replace(',', '.'));
+    if (!isNaN(parsedValue)) {
+      return parsedValue;
+    }
+  }
+  
+  // Verificar na lista de coberturas
+  if (product.coberturas) {
+    let medicalCoverage = 0;
+    
+    // Se coberturas for um array
+    if (Array.isArray(product.coberturas)) {
+      const medicalCoverageItem = product.coberturas.find(
+        c => (c.tipo?.toLowerCase()?.includes('medic') || 
+              c.nome?.toLowerCase()?.includes('medic') ||
+              c.descricao?.toLowerCase()?.includes('medic'))
+      );
+      
+      if (medicalCoverageItem) {
+        const value = medicalCoverageItem.valor || 
+                      medicalCoverageItem.valorCoberto ||
+                      medicalCoverageItem.valorCobertura || 
+                      medicalCoverageItem.value;
+        
+        if (value) {
+          if (typeof value === 'number') {
+            return value;
+          } else if (typeof value === 'string') {
+            const parsedValue = parseFloat(String(value).replace(/[^\d.,]/g, '').replace(',', '.'));
+            if (!isNaN(parsedValue)) {
+              return parsedValue;
+            }
+          }
+        }
+      }
+    } 
+    // Se coberturas for um objeto
+    else if (typeof product.coberturas === 'object') {
+      const keys = Object.keys(product.coberturas);
+      const medicalKey = keys.find(k => k.toLowerCase().includes('medic'));
+      
+      if (medicalKey && product.coberturas[medicalKey]) {
+        const value = product.coberturas[medicalKey].valor || 
+                      product.coberturas[medicalKey].valorCoberto ||
+                      product.coberturas[medicalKey];
+                      
+        if (value) {
+          if (typeof value === 'number') {
+            return value;
+          } else if (typeof value === 'string') {
+            const parsedValue = parseFloat(String(value).replace(/[^\d.,]/g, '').replace(',', '.'));
+            if (!isNaN(parsedValue)) {
+              return parsedValue;
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  // Valor padrão caso não encontre cobertura médica
+  return 30000;
+};
+
+// Função para extrair benefícios de um produto
+export const extractBenefits = (product: UniversalProduct): string[] => {
+  const benefits: string[] = [];
+  
+  // Verificar benefícios em formato de array
+  if (product.beneficios && Array.isArray(product.beneficios)) {
+    product.beneficios.forEach(b => {
+      if (typeof b === 'string') {
+        benefits.push(b);
+      } else if (typeof b === 'object' && b !== null) {
+        const name = b.nome || b.descricao || b.name;
+        if (name) {
+          benefits.push(name);
+        }
+      }
+    });
+  }
+  
+  // Verificar caracteristicas em formato de array
+  if (product.caracteristicas && Array.isArray(product.caracteristicas)) {
+    product.caracteristicas.forEach(c => {
+      if (typeof c === 'string') {
+        benefits.push(c);
+      } else if (typeof c === 'object' && c !== null) {
+        const name = c.nome || c.descricao || c.name;
+        if (name) {
+          benefits.push(name);
+        }
+      }
+    });
+  }
+  
+  // Benefícios padrão se não encontrar nenhum
+  if (benefits.length === 0) {
+    benefits.push("COVID-19", "Telemedicina", "Assistência 24h");
+  }
+  
+  return benefits;
+};
+
+// Função principal para processar os planos
+export const processPlans = async (products: UniversalProduct[]): Promise<InsuranceOffer[]> => {
+  try {
+    console.log(`Processando ${products.length} produtos...`);
+    
+    return products.map((product, index) => {
+      // Extrair preço
+      const price = extractPrice(product);
+      
+      // Extrair cobertura médica
+      const medicalCoverage = extractMedicalCoverage(product);
+      
+      // Calcular coberturas secundárias baseadas na principal
+      const baggageCoverage = Math.min(medicalCoverage * 0.05, 1500);
+      const cancellationCoverage = Math.min(medicalCoverage * 0.1, 3000);
+      const delayCoverage = Math.min(medicalCoverage * 0.01, 300);
+      
+      // Extrair benefícios
+      const benefits = extractBenefits(product);
+      
+      // Criar oferta
+      const offer: InsuranceOffer = {
+        id: product.id || product.codigo || `universal-${Math.random().toString(36).substring(2, 9)}`,
+        providerId: "universal-assist",
+        name: product.nome || product.descricao || `Plano Universal ${index + 1}`,
+        price: price,
+        coverage: {
+          medical: medicalCoverage,
+          baggage: baggageCoverage,
+          cancellation: cancellationCoverage,
+          delay: delayCoverage
+        },
+        benefits: benefits,
+        rating: 4.5 + (Math.random() * 0.5),
+        recommended: index === 0
+      };
+      
+      return offer;
+    });
+  } catch (error) {
+    console.error("Erro ao processar planos:", error);
+    throw new Error("Falha ao processar os planos de seguro: " + (error instanceof Error ? error.message : "Erro desconhecido"));
+  }
+};
+
+// Função para gerar ofertas mockadas (apenas para testes)
 export const generateMockOffers = (count: number): InsuranceOffer[] => {
   const mockOffers = [];
   
