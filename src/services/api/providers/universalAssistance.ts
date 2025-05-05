@@ -50,6 +50,32 @@ export const fetchUniversalAssistanceOffers = async (params: SearchParams): Prom
         throw new Error("Resposta de cotação vazia");
       }
       
+      // Log para diagnóstico de valores
+      console.log("Valores dos produtos recebidos:");
+      if (quoteData.produtos) {
+        quoteData.produtos.forEach((p, i) => {
+          console.log(`Produto ${i+1} (${p.nome || 'sem nome'}):`, {
+            codigo: p.codigo,
+            preco: p.preco,
+            valorBrutoBrl: p.valorBrutoBrl,
+            valorTotalBrl: p.valorTotalBrl,
+            moedaOrigem: p.moedaOrigem,
+            coberturas: p.coberturas ? 'sim' : 'não'
+          });
+        });
+      } else if (quoteData.planos) {
+        quoteData.planos.forEach((p, i) => {
+          console.log(`Plano ${i+1} (${p.nome || 'sem nome'}):`, {
+            codigo: p.codigo,
+            preco: p.preco,
+            valorBrutoBrl: p.valorBrutoBrl,
+            valorTotalBrl: p.valorTotalBrl,
+            moedaOrigem: p.moedaOrigem,
+            coberturas: p.coberturas ? 'sim' : 'não'
+          });
+        });
+      }
+      
       // Extrair os produtos/planos conforme documentação
       if (quoteData.produtos && quoteData.produtos.length > 0) {
         console.log(`Produtos encontrados (${quoteData.produtos.length}):`, quoteData.produtos);

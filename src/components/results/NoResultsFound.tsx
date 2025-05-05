@@ -32,7 +32,7 @@ const NoResultsFound = ({
         <h3 className="text-xl font-semibold">Nenhum seguro encontrado</h3>
         
         {errorMessage && (
-          <Alert variant={isFolhetoError ? "warning" : "destructive"} className="text-left mb-4">
+          <Alert variant={isFolhetoError ? "default" : "destructive"} className={`text-left mb-4 ${isFolhetoError ? 'border-amber-300 bg-amber-50' : ''}`}>
             <AlertTitle>{isFolhetoError ? "Combinação não disponível" : "Erro na busca"}</AlertTitle>
             <AlertDescription>
               {errorMessage}

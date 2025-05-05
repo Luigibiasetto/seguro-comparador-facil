@@ -153,12 +153,26 @@ export const processPlans = async (products: UniversalProduct[]): Promise<Insura
   try {
     console.log(`Processando ${products.length} produtos...`);
     
+    // Log para diagnóstico
+    products.forEach((p, i) => {
+      console.log(`Produto ${i+1} (${p.nome || 'sem nome'}):`, {
+        codigo: p.codigo,
+        preco: p.preco,
+        valorBrutoBrl: p.valorBrutoBrl,
+        valorTotalBrl: p.valorTotalBrl,
+        coberturas: p.coberturas ? 'sim' : 'não',
+        beneficios: p.beneficios ? (Array.isArray(p.beneficios) ? p.beneficios.length : 'objeto') : 'não'
+      });
+    });
+    
     return products.map((product, index) => {
       // Extrair preço
       const price = extractPrice(product);
+      console.log(`Preço extraído para ${product.nome || `produto ${index}`}: ${price}`);
       
       // Extrair cobertura médica
       const medicalCoverage = extractMedicalCoverage(product);
+      console.log(`Cobertura médica extraída para ${product.nome || `produto ${index}`}: ${medicalCoverage}`);
       
       // Calcular coberturas secundárias baseadas na principal
       const baggageCoverage = Math.min(medicalCoverage * 0.05, 1500);
@@ -167,6 +181,7 @@ export const processPlans = async (products: UniversalProduct[]): Promise<Insura
       
       // Extrair benefícios
       const benefits = extractBenefits(product);
+      console.log(`Benefícios extraídos para ${product.nome || `produto ${index}`}: ${benefits.length}`);
       
       // Criar oferta
       const offer: InsuranceOffer = {
