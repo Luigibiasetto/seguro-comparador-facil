@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -11,10 +10,11 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Eye, EyeOff, ArrowLeft } from 'lucide-react';
+import { Eye, EyeOff, ArrowLeft, AlertCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 // Esquema de validação para o login
 const loginSchema = z.object({
@@ -77,6 +77,8 @@ const Auth = () => {
   const location = useLocation();
   const [showPassword, setShowPassword] = useState(false);
   const [activeTab, setActiveTab] = useState('login');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [networkError, setNetworkError] = useState(false);
   const redirectTo = location.state?.from || '/';
 
   // Formatação do CPF enquanto digita
@@ -112,9 +114,13 @@ const Auth = () => {
   // Verificar se o usuário já está logado
   useEffect(() => {
     const checkSession = async () => {
-      const { data } = await supabase.auth.getSession();
-      if (data.session) {
-        navigate(redirectTo);
+      try {
+        const { data } = await supabase.auth.getSession();
+        if (data.session) {
+          navigate(redirectTo);
+        }
+      } catch (error) {
+        console.error("Erro ao verificar sessão:", error);
       }
     };
     
@@ -134,6 +140,9 @@ const Auth = () => {
 
   const handleLogin = async (values: LoginFormValues) => {
     try {
+      setIsSubmitting(true);
+      setNetworkError(false);
+      
       const { error } = await supabase.auth.signInWithPassword({
         email: values.email,
         password: values.password,
@@ -145,27 +154,57 @@ const Auth = () => {
       navigate(redirectTo);
     } catch (error: any) {
       console.error('Erro ao fazer login:', error);
-      toast.error('Erro ao fazer login', {
-        description: error.message || 'Verifique suas credenciais e tente novamente',
-      });
+      
+      // Verificar se é um erro de rede
+      if (error.message === 'Failed to fetch' || error.code === 'network_error') {
+        setNetworkError(true);
+        toast.error('Erro de conexão', {
+          description: 'Não foi possível conectar ao servidor. Verifique sua conexão com a internet.',
+        });
+      } else {
+        toast.error('Erro ao fazer login', {
+          description: error.message || 'Verifique suas credenciais e tente novamente',
+        });
+      }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleRegister = async (values: RegisterFormValues) => {
     try {
-      // Registro no Supabase Auth
-      const { error } = await supabase.auth.signUp({
+      setIsSubmitting(true);
+      setNetworkError(false);
+      
+      // Log para ajudar no diagnóstico
+      console.log("Iniciando registro com:", {
         email: values.email,
-        password: values.password,
-        options: {
+        name: values.name,
+        cpf: values.cpf.replace(/\D/g, ''),
+      });
+      
+      // Registro no Supabase Auth usando API direta para melhor tratamento de erros
+      const response = await fetch(`${supabase.auth.url}/signup`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': supabase.supabaseKey,
+        },
+        body: JSON.stringify({
+          email: values.email,
+          password: values.password,
           data: {
             name: values.name,
             cpf: values.cpf.replace(/\D/g, ''), // Salva CPF sem formatação
           },
-        },
+        }),
       });
       
-      if (error) throw error;
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error?.message || 'Erro ao registrar conta');
+      }
       
       toast.success('Registro realizado com sucesso!', {
         description: 'Verifique seu email para confirmar sua conta.',
@@ -173,9 +212,20 @@ const Auth = () => {
       setActiveTab('login');
     } catch (error: any) {
       console.error('Erro ao registrar:', error);
-      toast.error('Erro ao registrar', {
-        description: error.message || 'Verifique os dados e tente novamente',
-      });
+      
+      // Verificar se é um erro de rede
+      if (error.message === 'Failed to fetch' || error.code === 'network_error') {
+        setNetworkError(true);
+        toast.error('Erro de conexão', {
+          description: 'Não foi possível conectar ao servidor. Verifique sua conexão com a internet.',
+        });
+      } else {
+        toast.error('Erro ao registrar', {
+          description: error.message || 'Verifique os dados e tente novamente',
+        });
+      }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -206,6 +256,15 @@ const Auth = () => {
             <ArrowLeft className="w-4 h-4" />
             Voltar
           </Button>
+          
+          {networkError && (
+            <Alert variant="destructive" className="mb-4">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                Problema de conexão detectado. Verifique sua internet e tente novamente.
+              </AlertDescription>
+            </Alert>
+          )}
           
           <Card>
             <CardHeader>
@@ -280,8 +339,12 @@ const Auth = () => {
                     </CardContent>
                     
                     <CardFooter>
-                      <Button type="submit" className="w-full">
-                        Entrar
+                      <Button 
+                        type="submit" 
+                        className="w-full"
+                        disabled={isSubmitting}
+                      >
+                        {isSubmitting ? 'Entrando...' : 'Entrar'}
                       </Button>
                     </CardFooter>
                   </form>
@@ -401,8 +464,12 @@ const Auth = () => {
                     </CardContent>
                     
                     <CardFooter>
-                      <Button type="submit" className="w-full">
-                        Criar conta
+                      <Button 
+                        type="submit" 
+                        className="w-full"
+                        disabled={isSubmitting}
+                      >
+                        {isSubmitting ? 'Criando conta...' : 'Criar conta'}
                       </Button>
                     </CardFooter>
                   </form>
