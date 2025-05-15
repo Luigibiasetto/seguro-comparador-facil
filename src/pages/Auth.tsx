@@ -183,27 +183,21 @@ const Auth = () => {
         cpf: values.cpf.replace(/\D/g, ''),
       });
       
-      // Registro no Supabase Auth usando API direta para melhor tratamento de erros
-      const response = await fetch(`${supabase.auth.url}/signup`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': supabase.supabaseKey,
-        },
-        body: JSON.stringify({
-          email: values.email,
-          password: values.password,
+      // Usar a API direta do Supabase em vez de chamar a URL diretamente
+      const { data, error } = await supabase.auth.signUp({
+        email: values.email,
+        password: values.password,
+        options: {
           data: {
             name: values.name,
             cpf: values.cpf.replace(/\D/g, ''), // Salva CPF sem formatação
-          },
-        }),
+            user_type: 'client', // Indicador do tipo de usuário
+          }
+        }
       });
       
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.error?.message || 'Erro ao registrar conta');
+      if (error) {
+        throw error;
       }
       
       toast.success('Registro realizado com sucesso!', {
