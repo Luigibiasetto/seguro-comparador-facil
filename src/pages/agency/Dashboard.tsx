@@ -10,7 +10,8 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { Building2, Users, ShoppingBag, BarChart3, Settings, LogOut } from "lucide-react";
 import { toast } from "sonner";
-import { Agency, AgencyTableData } from "@/services/api/types/agency";
+import { Agency } from "@/services/api/types/agency";
+import { getAgencyByUserId } from "@/services/agencyService";
 
 const AgencyDashboard = () => {
   const navigate = useNavigate();
@@ -33,29 +34,25 @@ const AgencyDashboard = () => {
           return;
         }
         
-        // Buscar dados da agência usando SQL raw
-        const { data: agencyData, error } = await supabase
-          .from('agencies')
-          .select('*')
-          .eq('user_id', data.session.user.id)
-          .maybeSingle();
+        // Usar função do nosso novo serviço para buscar dados da agência
+        const agency = await getAgencyByUserId(data.session.user.id);
         
-        if (error || !agencyData) {
-          console.error("Erro ao carregar dados da agência:", error);
+        if (!agency) {
+          console.error("Não foi possível encontrar dados da agência");
           await supabase.auth.signOut();
           navigate('/agency/login');
           return;
         }
         
-        // Converter de AgencyTableData para Agency
-        setAgencyData(agencyData as unknown as Agency);
+        setAgencyData(agency);
         
         // Dados mockados para demonstração
         setSalesCount(12);
         setTotalRevenue(8750);
-        setTotalCommission((agencyData?.commission_rate || 0) * 8750 / 100);
+        setTotalCommission((agency?.commission_rate || 0) * 8750 / 100);
       } catch (error) {
         console.error("Erro ao verificar autenticação:", error);
+        navigate('/agency/login');
       } finally {
         setLoading(false);
       }

@@ -13,6 +13,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { toast } from "sonner";
+import { createAgency } from "@/services/agencyService";
 
 // Validação do CNPJ
 const validateCNPJ = (cnpj: string) => {
@@ -70,13 +71,12 @@ const registerSchema = z.object({
   phone: z.string().min(10, { message: "Telefone inválido" }),
   password: z.string().min(6, { message: "A senha deve ter pelo menos 6 caracteres" }),
   confirmPassword: z.string(),
-  commission: z.string().transform(val => Number(val)),
+  commission: z.coerce.number().min(0).max(60),
 }).refine(data => data.password === data.confirmPassword, {
   message: "As senhas não coincidem",
   path: ["confirmPassword"],
 }).refine(data => {
-  const commission = Number(data.commission);
-  return commission >= 0 && commission <= 60;
+  return data.commission >= 0 && data.commission <= 60;
 }, {
   message: "A comissão deve estar entre 0% e 60%",
   path: ["commission"],
@@ -99,7 +99,7 @@ const AgencyRegister = () => {
       phone: "",
       password: "",
       confirmPassword: "",
-      commission: "10",
+      commission: 10,
     },
   });
 
@@ -122,19 +122,19 @@ const AgencyRegister = () => {
       
       if (userError) throw userError;
       
-      // Inserir dados da agência na tabela 'agencies' usando SQL raw
-      const { error: agencyError } = await supabase.rpc('create_agency', {
-        p_user_id: userData.user!.id,
-        p_name: values.agencyName,
-        p_cnpj: values.cnpj.replace(/\D/g, ''),
-        p_responsible_name: values.responsibleName,
-        p_email: values.email,
-        p_phone: values.phone,
-        p_commission_rate: Number(values.commission),
-        p_status: 'pending'
-      });
+      // Criar a agência usando nossa função de serviço
+      const { success, error: agencyError } = await createAgency(
+        userData.user!.id,
+        values.agencyName,
+        values.cnpj.replace(/\D/g, ''),
+        values.responsibleName,
+        values.email,
+        values.phone,
+        values.commission,
+        'pending'
+      );
       
-      if (agencyError) {
+      if (!success) {
         console.error('Erro ao registrar agência:', agencyError);
         // Reverter o registro do usuário se houver erro
         throw agencyError;

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -15,7 +14,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { toast } from "sonner";
-import { AgencyTableData } from "@/services/api/types/agency";
+import { getAgencyByUserId } from "@/services/agencyService";
 
 // Esquema de validação do formulário
 const loginSchema = z.object({
@@ -36,12 +35,8 @@ const AgencyLogin = () => {
       try {
         const { data } = await supabase.auth.getSession();
         if (data.session) {
-          // Usamos SQL RAW para evitar problemas de tipagem
-          const { data: agencyData, error } = await supabase
-            .from('agencies')
-            .select('*')
-            .eq('user_id', data.session.user.id)
-            .maybeSingle();
+          // Usar nossa nova função de serviço
+          const agencyData = await getAgencyByUserId(data.session.user.id);
             
           if (agencyData) {
             navigate('/agency/dashboard');
@@ -75,14 +70,10 @@ const AgencyLogin = () => {
       
       if (error) throw error;
       
-      // Verificar se o usuário é uma agência usando SQL raw
-      const { data: agencyData, error: agencyError } = await supabase
-        .from('agencies')
-        .select('*')
-        .eq('user_id', data.user.id)
-        .maybeSingle();
+      // Verificar se o usuário é uma agência usando nossa função de serviço
+      const agencyData = await getAgencyByUserId(data.user.id);
       
-      if (agencyError || !agencyData) {
+      if (!agencyData) {
         await supabase.auth.signOut();
         toast.error('Acesso negado', { 
           description: 'Esta conta não está registrada como agência de viagens.' 
