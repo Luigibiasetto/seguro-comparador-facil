@@ -6,14 +6,17 @@ import { Agency, AgencyTableData } from "@/services/api/types/agency";
 export async function getAgencyByUserId(userId: string): Promise<Agency | null> {
   try {
     const { data, error } = await supabase
-      .rpc('get_agency_by_user_id', { p_user_id: userId });
+      .rpc('get_agency_by_user_id', { p_user_id: userId }) as unknown as {
+        data: Agency | null;
+        error: Error | null;
+      };
 
     if (error || !data) {
       console.error("Error fetching agency:", error);
       return null;
     }
     
-    return data as unknown as Agency;
+    return data;
   } catch (error) {
     console.error("Exception when fetching agency:", error);
     return null;
@@ -23,14 +26,17 @@ export async function getAgencyByUserId(userId: string): Promise<Agency | null> 
 export async function getAgencyByEmail(email: string): Promise<Agency | null> {
   try {
     const { data, error } = await supabase
-      .rpc('get_agency_by_email', { p_email: email });
+      .rpc('get_agency_by_email', { p_email: email }) as unknown as {
+        data: Agency | null;
+        error: Error | null;
+      };
     
     if (error || !data) {
       console.error("Error fetching agency by email:", error);
       return null;
     }
     
-    return data as unknown as Agency;
+    return data;
   } catch (error) {
     console.error("Exception when fetching agency by email:", error);
     return null;
@@ -57,7 +63,10 @@ export async function createAgency(
       p_phone: phone,
       p_commission_rate: commissionRate,
       p_status: status
-    });
+    }) as unknown as {
+      data: any;
+      error: Error | null;
+    };
     
     if (error) {
       console.error("Error creating agency:", error);
