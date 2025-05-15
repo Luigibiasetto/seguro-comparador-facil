@@ -5,6 +5,7 @@ import { Agency, AgencyTableData } from "@/services/api/types/agency";
 // Functions to interact with agencies table using raw SQL queries
 export async function getAgencyByUserId(userId: string): Promise<Agency | null> {
   try {
+    // Use type assertion to override Supabase's default typing
     const { data, error } = await supabase
       .rpc('get_agency_by_user_id', { p_user_id: userId }) as unknown as {
         data: Agency | null;
@@ -25,6 +26,7 @@ export async function getAgencyByUserId(userId: string): Promise<Agency | null> 
 
 export async function getAgencyByEmail(email: string): Promise<Agency | null> {
   try {
+    // Use type assertion to override Supabase's default typing
     const { data, error } = await supabase
       .rpc('get_agency_by_email', { p_email: email }) as unknown as {
         data: Agency | null;
@@ -54,6 +56,7 @@ export async function createAgency(
   status: 'active' | 'pending' | 'inactive' = 'pending'
 ): Promise<{ success: boolean; error?: any }> {
   try {
+    // Use type assertion to override Supabase's default typing
     const { error } = await supabase.rpc('create_agency', {
       p_user_id: userId,
       p_name: name,
