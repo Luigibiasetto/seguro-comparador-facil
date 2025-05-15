@@ -13,7 +13,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import { toast } from "sonner";
+import { toast } from "@/hooks/use-toast";
 import { createAgency } from "@/services/agencyService";
 
 // Validação do CNPJ
@@ -115,8 +115,11 @@ const AgencyRegister = () => {
       
       // Testando conexão com Supabase antes de prosseguir
       try {
-        const { data: testData, error: testError } = await supabase.from('_dummy_test_').select('count').limit(1).maybeSingle();
-        if (testError && testError.code !== 'PGRST116') { // PGRST116 é "relation does not exist", esperado para tabela de teste
+        // Usando RPC para testar conexão em vez de acessar tabela não existente
+        const { data: testData, error: testError } = await supabase.rpc('ping', {}, { count: 'exact' })
+          .maybeSingle();
+          
+        if (testError) {
           console.warn("Teste de conexão com Supabase falhou:", testError);
           // Continuamos mesmo com falha no teste, pois o erro pode ser apenas de permissão
         } else {

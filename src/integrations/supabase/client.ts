@@ -25,16 +25,21 @@ const options = {
 
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, options);
 
-// Função auxiliar para verificar status de conexão
+// Função auxiliar para verificar status de conexão usando RPC em vez de tabela direta
 export const checkSupabaseConnection = async () => {
   try {
-    const { data, error } = await supabase.from('_dummy_test_').select('count').limit(1).maybeSingle();
-    if (error && error.code !== 'PGRST116') { // PGRST116 é "relation does not exist", esperado para tabela de teste
+    // Usando rpc em vez de acessar uma tabela que não está definida na tipagem
+    const { data, error } = await supabase.rpc('ping', {}, { count: 'exact' })
+      .maybeSingle();
+    
+    if (error) {
+      console.warn("Teste de conexão com Supabase falhou:", error);
       return {
         connected: false,
         error: error
       };
     }
+    
     return {
       connected: true
     };
