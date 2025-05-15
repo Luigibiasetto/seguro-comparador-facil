@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
@@ -88,6 +89,7 @@ const AgencyRegister = () => {
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [networkError, setNetworkError] = useState(false);
+  const [errorDetails, setErrorDetails] = useState<string | null>(null);
 
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
@@ -107,8 +109,25 @@ const AgencyRegister = () => {
     try {
       setIsSubmitting(true);
       setNetworkError(false);
+      setErrorDetails(null);
+      
+      console.log("Iniciando processo de registro de agência...");
+      
+      // Testando conexão com Supabase antes de prosseguir
+      try {
+        const { data: testData, error: testError } = await supabase.from('_dummy_test_').select('count').limit(1).maybeSingle();
+        if (testError && testError.code !== 'PGRST116') { // PGRST116 é "relation does not exist", esperado para tabela de teste
+          console.warn("Teste de conexão com Supabase falhou:", testError);
+          // Continuamos mesmo com falha no teste, pois o erro pode ser apenas de permissão
+        } else {
+          console.log("Teste de conexão com Supabase bem-sucedido");
+        }
+      } catch (connectionError) {
+        console.error("Erro no teste de conexão:", connectionError);
+      }
       
       // Registro do usuário no Supabase Auth
+      console.log("Registrando usuário no Auth...");
       const { data: userData, error: userError } = await supabase.auth.signUp({
         email: values.email,
         password: values.password,
@@ -120,11 +139,28 @@ const AgencyRegister = () => {
         }
       });
       
-      if (userError) throw userError;
+      if (userError) {
+        console.error("Erro ao registrar usuário:", userError);
+        
+        if (userError.message === 'Failed to fetch' || userError.code === 'network_error') {
+          setNetworkError(true);
+          setErrorDetails("Falha na conexão com o servidor de autenticação. Código: " + (userError.code || 'desconhecido'));
+          throw userError;
+        }
+        
+        throw userError;
+      }
+      
+      if (!userData.user || !userData.user.id) {
+        console.error("Usuário criado sem ID válido");
+        throw new Error("Falha ao obter ID do usuário após registro");
+      }
+      
+      console.log("Usuário registrado com sucesso. Criando agência...");
       
       // Criar a agência usando nossa função de serviço
       const { success, error: agencyError } = await createAgency(
-        userData.user!.id,
+        userData.user.id,
         values.agencyName,
         values.cnpj.replace(/\D/g, ''),
         values.responsibleName,
@@ -136,7 +172,26 @@ const AgencyRegister = () => {
       
       if (!success) {
         console.error('Erro ao registrar agência:', agencyError);
+        
+        // Verificar se é um erro de conexão específico
+        if (agencyError && 
+            (agencyError.message === 'Failed to fetch' || 
+             agencyError.code === 'network_error' || 
+             agencyError.toString().includes('network') ||
+             agencyError.toString().includes('fetch'))) {
+          setNetworkError(true);
+          setErrorDetails(`Falha na conexão com o servidor ao registrar a agência. Detalhes: ${agencyError.code || agencyError.message || agencyError}`);
+        }
+        
         // Reverter o registro do usuário se houver erro
+        try {
+          console.log("Tentando reverter registro de usuário após falha na criação da agência");
+          // Não podemos realmente excluir o usuário do frontend, mas podemos deslogar
+          await supabase.auth.signOut();
+        } catch (revertError) {
+          console.error("Erro ao tentar reverter registro:", revertError);
+        }
+        
         throw agencyError;
       }
       
@@ -148,12 +203,29 @@ const AgencyRegister = () => {
       
       navigate('/agency/login');
     } catch (error: any) {
-      console.error('Erro ao registrar agência:', error);
+      console.error('Erro completo ao registrar agência:', error);
       
-      if (error.message === 'Failed to fetch' || error.code === 'network_error') {
+      // Informações detalhadas sobre o erro para diagnóstico
+      const errorInfo = {
+        message: error.message || 'Erro desconhecido',
+        code: error.code || 'sem código',
+        status: error.status || 'sem status',
+        name: error.name || 'sem nome',
+        stack: error.stack || 'sem stack',
+        toString: error.toString()
+      };
+      
+      console.log("Informações detalhadas do erro:", errorInfo);
+      
+      if (error.message === 'Failed to fetch' || 
+          error.code === 'network_error' || 
+          error.name === 'AuthRetryableFetchError' ||
+          error.name === 'TypeError' && error.message === 'Failed to fetch') {
         setNetworkError(true);
+        setErrorDetails(`Tipo: ${error.name || 'Desconhecido'}, Código: ${error.code || 'N/A'}`);
+        
         toast.error('Erro de conexão', {
-          description: 'Não foi possível conectar ao servidor. Verifique sua conexão com a internet.',
+          description: 'Não foi possível conectar ao servidor. Verifique sua conexão com a internet ou tente novamente mais tarde.',
         });
       } else {
         toast.error('Erro ao registrar', {
@@ -188,7 +260,12 @@ const AgencyRegister = () => {
             <Alert variant="destructive" className="mb-4">
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
-                Problema de conexão detectado. Verifique sua internet e tente novamente.
+                <div>
+                  <p>Problema de conexão detectado. Verifique sua internet e tente novamente.</p>
+                  {errorDetails && (
+                    <p className="text-xs mt-1">Detalhes técnicos: {errorDetails}</p>
+                  )}
+                </div>
               </AlertDescription>
             </Alert>
           )}
