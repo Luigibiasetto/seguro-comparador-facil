@@ -23,6 +23,7 @@ import AbandonedCarts from './pages/admin/AbandonedCarts';
 import AgencyLogin from './pages/agency/Login';
 import AgencyRegister from './pages/agency/Register';
 import AgencyDashboard from './pages/agency/Dashboard';
+import TestAgencyLogin from './pages/agency/TestLogin'; // Nova página de login de teste
 
 const queryClient = new QueryClient();
 
@@ -53,6 +54,7 @@ const App = () => (
           <Route path="/agency/login" element={<AgencyLogin />} />
           <Route path="/agency/register" element={<AgencyRegister />} />
           <Route path="/agency/dashboard" element={<AgencyDashboard />} />
+          <Route path="/agency/test-login" element={<TestAgencyLogin />} /> {/* Nova rota para login de teste */}
           
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
