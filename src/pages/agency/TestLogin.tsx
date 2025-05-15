@@ -1,11 +1,11 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from "@/components/ui/button";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import { ArrowLeft, UserPlus, Copy, Key, Mail, AlertCircle, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, UserPlus, Copy, Key, Mail, AlertCircle, CheckCircle2, Wifi, WifiOff } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { createTestAgencyUser } from "@/services/testUserService";
@@ -17,8 +17,8 @@ const TestAgencyLogin = () => {
     email: string;
     password: string;
   } | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
+  const [error, setError] = useState<{message: string; type?: string} | null>(null);
+  
   const handleCreateTestUser = async () => {
     try {
       setIsCreating(true);
@@ -34,19 +34,39 @@ const TestAgencyLogin = () => {
         toast({
           title: "Usuário de teste criado",
           description: "Credenciais geradas com sucesso",
-          variant: "default",
         });
       } else {
-        setError("Não foi possível criar o usuário de teste. Tente novamente.");
+        // Tratar diferentes tipos de erro
+        if (result.error?.type === "connection_error") {
+          setError({
+            message: result.error.message || "Erro de conexão. Verifique sua internet.",
+            type: "connection_error"
+          });
+        } else {
+          setError({
+            message: "Não foi possível criar o usuário de teste. Tente novamente.",
+            type: "generic_error"
+          });
+        }
+        
         toast({
-          title: "Erro",
-          description: "Falha ao criar usuário de teste",
           variant: "destructive",
+          title: "Erro",
+          description: result.error?.message || "Falha ao criar usuário de teste",
         });
       }
     } catch (err) {
       console.error("Erro ao criar usuário de teste:", err);
-      setError("Ocorreu um erro inesperado. Tente novamente mais tarde.");
+      setError({
+        message: "Ocorreu um erro inesperado. Tente novamente mais tarde.",
+        type: "generic_error"
+      });
+      
+      toast({
+        variant: "destructive",
+        title: "Erro inesperado",
+        description: "Ocorreu um problema ao processar sua solicitação",
+      });
     } finally {
       setIsCreating(false);
     }
@@ -57,7 +77,6 @@ const TestAgencyLogin = () => {
     toast({
       title: "Copiado!",
       description: `${type === 'email' ? 'Email' : 'Senha'} copiado para a área de transferência`,
-      variant: "default",
     });
   };
 
@@ -75,6 +94,23 @@ const TestAgencyLogin = () => {
             Voltar para a página inicial
           </Button>
           
+          {error && (
+            <Alert 
+              variant="destructive" 
+              className="mb-4"
+            >
+              {error.type === "connection_error" ? (
+                <WifiOff className="h-4 w-4" />
+              ) : (
+                <AlertCircle className="h-4 w-4" />
+              )}
+              <AlertTitle>
+                {error.type === "connection_error" ? "Problema de conexão" : "Erro"}
+              </AlertTitle>
+              <AlertDescription>{error.message}</AlertDescription>
+            </Alert>
+          )}
+          
           <Card>
             <CardHeader className="text-center">
               <CardTitle className="text-2xl">Usuário de Teste para Agências</CardTitle>
@@ -84,13 +120,6 @@ const TestAgencyLogin = () => {
             </CardHeader>
             
             <CardContent>
-              {error && (
-                <Alert variant="destructive" className="mb-4">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
-              
               {testCredentials ? (
                 <div className="space-y-4">
                   <Alert variant="default" className="bg-green-50 border-green-200">

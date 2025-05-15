@@ -18,19 +18,48 @@ export async function createTestAgencyUser(): Promise<{
   try {
     console.log("Iniciando criação de usuário de teste para agência...");
     
-    // Verificar se o usuário já existe
-    const { data: existingUser } = await supabase.auth.signInWithPassword({
-      email: testEmail,
-      password: testPassword,
-    });
-    
-    if (existingUser?.user) {
-      console.log("Usuário de teste já existe, retornando credenciais");
+    // Verificar se há conexão com o Supabase antes de continuar
+    try {
+      const connectionTest = await supabase.auth.getSession();
+      if (connectionTest.error) {
+        console.error("Erro de conexão com o Supabase:", connectionTest.error);
+        return {
+          success: false,
+          error: {
+            message: "Não foi possível conectar ao Supabase. Verifique sua conexão com a internet.",
+            type: "connection_error"
+          }
+        };
+      }
+    } catch (connError) {
+      console.error("Falha ao verificar conexão:", connError);
       return {
-        success: true,
-        email: testEmail,
-        password: testPassword
+        success: false,
+        error: {
+          message: "Não foi possível verificar conexão com o serviço. Verifique sua conexão com a internet.",
+          type: "connection_error"
+        }
       };
+    }
+    
+    // Verificar se o usuário já existe
+    try {
+      const { data: existingUser, error: signInError } = await supabase.auth.signInWithPassword({
+        email: testEmail,
+        password: testPassword,
+      });
+      
+      if (!signInError && existingUser?.user) {
+        console.log("Usuário de teste já existe, retornando credenciais");
+        return {
+          success: true,
+          email: testEmail,
+          password: testPassword
+        };
+      }
+    } catch (signInError) {
+      // Ignorar erro aqui, pois pode ser apenas que o usuário não existe
+      console.log("Usuário provavelmente não existe, tentando criar:", signInError);
     }
     
     // Criar novo usuário
@@ -71,8 +100,20 @@ export async function createTestAgencyUser(): Promise<{
       password: testPassword
     };
     
-  } catch (error) {
+  } catch (error: any) {
     console.error("Erro ao criar usuário de teste:", error);
+    
+    // Verificar se é erro de rede
+    if (error.message === "Failed to fetch" || error.code === "network_error") {
+      return {
+        success: false,
+        error: {
+          message: "Erro de conexão com o servidor. Verifique sua conexão com a internet.",
+          type: "connection_error"
+        }
+      };
+    }
+    
     return {
       success: false,
       error: error
