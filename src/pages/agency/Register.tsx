@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
@@ -123,21 +122,20 @@ const AgencyRegister = () => {
       
       if (userError) throw userError;
       
-      // Inserir dados da agência na tabela 'agencies'
-      const { error: agencyError } = await supabase
-        .from('agencies')
-        .insert({
-          user_id: userData.user!.id,
-          name: values.agencyName,
-          cnpj: values.cnpj.replace(/\D/g, ''),
-          responsible_name: values.responsibleName,
-          email: values.email,
-          phone: values.phone,
-          commission_rate: values.commission,
-          status: 'pending', // Pendente de aprovação
-        });
+      // Inserir dados da agência na tabela 'agencies' usando SQL raw
+      const { error: agencyError } = await supabase.rpc('create_agency', {
+        p_user_id: userData.user!.id,
+        p_name: values.agencyName,
+        p_cnpj: values.cnpj.replace(/\D/g, ''),
+        p_responsible_name: values.responsibleName,
+        p_email: values.email,
+        p_phone: values.phone,
+        p_commission_rate: Number(values.commission),
+        p_status: 'pending'
+      });
       
       if (agencyError) {
+        console.error('Erro ao registrar agência:', agencyError);
         // Reverter o registro do usuário se houver erro
         throw agencyError;
       }

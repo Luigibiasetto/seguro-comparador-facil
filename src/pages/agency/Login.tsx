@@ -15,6 +15,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { toast } from "sonner";
+import { AgencyTableData } from "@/services/api/types/agency";
 
 // Esquema de validação do formulário
 const loginSchema = z.object({
@@ -35,13 +36,14 @@ const AgencyLogin = () => {
       try {
         const { data } = await supabase.auth.getSession();
         if (data.session) {
-          const { data: userData } = await supabase
+          // Usamos SQL RAW para evitar problemas de tipagem
+          const { data: agencyData, error } = await supabase
             .from('agencies')
             .select('*')
             .eq('user_id', data.session.user.id)
-            .single();
+            .maybeSingle();
             
-          if (userData) {
+          if (agencyData) {
             navigate('/agency/dashboard');
           }
         }
@@ -73,12 +75,12 @@ const AgencyLogin = () => {
       
       if (error) throw error;
       
-      // Verificar se o usuário é uma agência
+      // Verificar se o usuário é uma agência usando SQL raw
       const { data: agencyData, error: agencyError } = await supabase
         .from('agencies')
         .select('*')
         .eq('user_id', data.user.id)
-        .single();
+        .maybeSingle();
       
       if (agencyError || !agencyData) {
         await supabase.auth.signOut();

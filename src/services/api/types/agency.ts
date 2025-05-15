@@ -38,3 +38,18 @@ export interface AgencyCommission {
   status: 'pending' | 'paid';
   payment_date?: string;
 }
+
+// Definimos este tipo para ser usado com o SQL RAW quando
+// a tabela 'agencies' ainda não existe na tipagem do Supabase
+export interface AgencyTableData {
+  id: string;
+  user_id: string;
+  name: string;
+  cnpj: string;
+  responsible_name: string;
+  email: string;
+  phone: string;
+  commission_rate: number;
+  status: string;
+  created_at: string;
+}

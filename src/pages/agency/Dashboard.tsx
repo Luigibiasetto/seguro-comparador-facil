@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,23 +10,12 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { Building2, Users, ShoppingBag, BarChart3, Settings, LogOut } from "lucide-react";
 import { toast } from "sonner";
-
-interface AgencyData {
-  id: string;
-  name: string;
-  cnpj: string;
-  responsible_name: string;
-  email: string;
-  phone: string;
-  commission_rate: number;
-  status: string;
-  created_at: string;
-}
+import { Agency, AgencyTableData } from "@/services/api/types/agency";
 
 const AgencyDashboard = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
-  const [agencyData, setAgencyData] = useState<AgencyData | null>(null);
+  const [agencyData, setAgencyData] = useState<Agency | null>(null);
   const [activeTab, setActiveTab] = useState("overview");
   const [salesCount, setSalesCount] = useState(0);
   const [totalRevenue, setTotalRevenue] = useState(0);
@@ -45,12 +33,12 @@ const AgencyDashboard = () => {
           return;
         }
         
-        // Buscar dados da agência
+        // Buscar dados da agência usando SQL raw
         const { data: agencyData, error } = await supabase
           .from('agencies')
           .select('*')
           .eq('user_id', data.session.user.id)
-          .single();
+          .maybeSingle();
         
         if (error || !agencyData) {
           console.error("Erro ao carregar dados da agência:", error);
@@ -59,12 +47,13 @@ const AgencyDashboard = () => {
           return;
         }
         
-        setAgencyData(agencyData);
+        // Converter de AgencyTableData para Agency
+        setAgencyData(agencyData as unknown as Agency);
         
         // Dados mockados para demonstração
         setSalesCount(12);
         setTotalRevenue(8750);
-        setTotalCommission(agencyData.commission_rate * 8750 / 100);
+        setTotalCommission((agencyData?.commission_rate || 0) * 8750 / 100);
       } catch (error) {
         console.error("Erro ao verificar autenticação:", error);
       } finally {
