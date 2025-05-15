@@ -28,9 +28,12 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
 // Função auxiliar para verificar status de conexão usando RPC em vez de tabela direta
 export const checkSupabaseConnection = async () => {
   try {
-    // Usando rpc em vez de acessar uma tabela que não está definida na tipagem
-    const { data, error } = await supabase.rpc('ping', {}, { count: 'exact' })
-      .maybeSingle();
+    // Usando consulta simples para verificar conexão em vez de RPC
+    const { data, error } = await supabase
+      .from('abandoned_carts')
+      .select('count')
+      .limit(1)
+      .single();
     
     if (error) {
       console.warn("Teste de conexão com Supabase falhou:", error);

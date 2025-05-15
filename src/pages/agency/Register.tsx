@@ -115,9 +115,12 @@ const AgencyRegister = () => {
       
       // Testando conexão com Supabase antes de prosseguir
       try {
-        // Usando RPC para testar conexão em vez de acessar tabela não existente
-        const { data: testData, error: testError } = await supabase.rpc('ping', {}, { count: 'exact' })
-          .maybeSingle();
+        // Usando consulta simples para verificar conexão
+        const { data: testData, error: testError } = await supabase
+          .from('abandoned_carts')
+          .select('count')
+          .limit(1)
+          .single();
           
         if (testError) {
           console.warn("Teste de conexão com Supabase falhou:", testError);
@@ -200,8 +203,10 @@ const AgencyRegister = () => {
       
       await supabase.auth.signOut(); // Deslogar o usuário após o registro
       
-      toast.success('Registro realizado com sucesso!', {
-        description: 'Aguarde a aprovação do seu cadastro para acessar o portal.',
+      toast({
+        title: "Registro realizado com sucesso!",
+        description: "Aguarde a aprovação do seu cadastro para acessar o portal.",
+        variant: "default",
       });
       
       navigate('/agency/login');
@@ -227,12 +232,16 @@ const AgencyRegister = () => {
         setNetworkError(true);
         setErrorDetails(`Tipo: ${error.name || 'Desconhecido'}, Código: ${error.code || 'N/A'}`);
         
-        toast.error('Erro de conexão', {
-          description: 'Não foi possível conectar ao servidor. Verifique sua conexão com a internet ou tente novamente mais tarde.',
+        toast({
+          title: "Erro de conexão",
+          description: "Não foi possível conectar ao servidor. Verifique sua conexão com a internet ou tente novamente mais tarde.",
+          variant: "destructive",
         });
       } else {
-        toast.error('Erro ao registrar', {
-          description: error.message || 'Verifique os dados e tente novamente',
+        toast({
+          title: "Erro ao registrar",
+          description: error.message || "Verifique os dados e tente novamente",
+          variant: "destructive",
         });
       }
     } finally {
