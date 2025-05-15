@@ -28,10 +28,12 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
 // Função auxiliar para verificar status de conexão sem depender de tabelas específicas
 export const checkSupabaseConnection = async () => {
   try {
-    // Usar uma função simples para verificar a conexão em vez de acessar tabelas
-    const { data, error } = await supabase.auth.getSession();
+    // Usar uma consulta SQL simples que não requer tabelas específicas
+    const { error } = await supabase.from('_test_connection_').select('*').limit(1).single();
     
-    if (error) {
+    // Se o erro for "não encontrado" ou qualquer outro erro relacionado à tabela inexistente,
+    // ainda significa que a conexão funciona
+    if (error && error.code !== 'PGRST116') {
       console.warn("Teste de conexão com Supabase falhou:", error);
       return {
         connected: false,

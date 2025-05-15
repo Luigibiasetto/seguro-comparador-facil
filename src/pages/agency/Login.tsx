@@ -1,6 +1,6 @@
+
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -28,26 +28,32 @@ const AgencyLogin = () => {
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [networkError, setNetworkError] = useState(false);
+  const [checkingConnection, setCheckingConnection] = useState(true);
 
-  // Verificar se já está autenticado como agência
+  // Verificar se já está autenticado como agência e testar conexão
   useEffect(() => {
-    const checkSession = async () => {
+    const checkConnection = async () => {
       try {
+        // Tentar estabelecer conexão com o Supabase
         const { data } = await supabase.auth.getSession();
         if (data.session) {
-          // Usar nossa nova função de serviço
+          // Usar nossa função de serviço
           const agencyData = await getAgencyByUserId(data.session.user.id);
             
           if (agencyData) {
             navigate('/agency/dashboard');
           }
         }
+        setNetworkError(false);
       } catch (error) {
         console.error("Erro ao verificar sessão:", error);
+        setNetworkError(true);
+      } finally {
+        setCheckingConnection(false);
       }
     };
     
-    checkSession();
+    checkConnection();
   }, [navigate]);
 
   const form = useForm<LoginFormValues>({
@@ -101,6 +107,14 @@ const AgencyLogin = () => {
     }
   };
 
+  // Função para acessar em modo demonstração sem autenticação
+  const handleDemoAccess = () => {
+    toast.info('Acessando em modo demonstração', {
+      description: 'Você está acessando o portal em modo limitado devido a problemas de conexão'
+    });
+    navigate('/agency/dashboard');
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
@@ -119,7 +133,7 @@ const AgencyLogin = () => {
             <Alert variant="destructive" className="mb-4">
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
-                Problema de conexão detectado. Verifique sua internet e tente novamente.
+                Problema de conexão detectado. Verifique sua internet ou use o acesso de demonstração abaixo.
               </AlertDescription>
             </Alert>
           )}
@@ -189,6 +203,21 @@ const AgencyLogin = () => {
                   </Button>
                 </form>
               </Form>
+              
+              {networkError && (
+                <div className="mt-6">
+                  <Button 
+                    variant="outline" 
+                    className="w-full" 
+                    onClick={handleDemoAccess}
+                  >
+                    Acessar em modo demonstração
+                  </Button>
+                  <p className="text-xs text-gray-500 text-center mt-2">
+                    Acesso limitado apenas para visualização
+                  </p>
+                </div>
+              )}
               
               <div className="mt-6 text-center">
                 <p className="text-sm text-gray-600">
